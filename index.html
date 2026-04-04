@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Planner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #5b6af0;
+      --primary-light: #eef0fe;
+      --accent: #f97316;
+      --accent-light: #fff4ed;
+      --green: #22c55e;
+      --green-light: #f0fdf4;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --bg: #f8f9ff;
+      --surface: #ffffff;
+      --border: #e4e7f0;
+      --text: #1e2235;
+      --muted: #6b7280;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(91,106,240,0.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 1.2rem; font-weight: 700; color: var(--primary); }
+    .logo-icon { font-size: 1.6rem; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border-radius: 8px; font-size: 0.875rem;
+      font-weight: 600; cursor: pointer; border: none; transition: all .15s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: #4454e0; }
+    .btn-secondary { background: var(--primary-light); color: var(--primary); }
+    .btn-secondary:hover { background: #dde1fc; }
+    .btn-danger { background: #fee2e2; color: var(--red); }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: calc(100vh - 64px); }
+
+    /* ── Sidebar ── */
+    nav {
+      width: 220px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 12px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-radius: 8px;
+      cursor: pointer; font-size: 0.9rem; font-weight: 500;
+      color: var(--muted); transition: all .15s; user-select: none;
+    }
+    .nav-item:hover { background: var(--primary-light); color: var(--primary); }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+    .nav-icon { font-size: 1.1rem; }
+    .nav-divider { height: 1px; background: var(--border); margin: 8px 4px; }
+
+    /* ── Main ── */
+    main { flex: 1; padding: 28px; overflow-y: auto; }
+
+    /* ── Pages ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Page Header ── */
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .page-title { font-size: 1.5rem; font-weight: 700; }
+    .page-subtitle { font-size: 0.875rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Stats row ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .stat-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .stat-value { font-size: 2rem; font-weight: 700; }
+    .stat-card.blue .stat-value { color: var(--primary); }
+    .stat-card.orange .stat-value { color: var(--accent); }
+    .stat-card.green .stat-value { color: var(--green); }
+    .stat-card.yellow .stat-value { color: var(--yellow); }
+
+    /* ── Event Cards ── */
+    .events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .event-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      display: flex; flex-direction: column; gap: 12px;
+      cursor: pointer; transition: box-shadow .15s, transform .15s;
+      position: relative; overflow: hidden;
+    }
+    .event-card:hover { box-shadow: 0 4px 20px rgba(91,106,240,0.14); transform: translateY(-2px); }
+    .event-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .event-card-title { font-size: 1rem; font-weight: 700; }
+    .event-badge {
+      font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .badge-birthday { background: #fce7f3; color: #be185d; }
+    .badge-wedding  { background: #ffe4e6; color: #be123c; }
+    .badge-party    { background: #f3e8ff; color: #7e22ce; }
+    .badge-school   { background: #dbeafe; color: #1d4ed8; }
+    .badge-sports   { background: #fed7aa; color: #c2410c; }
+    .badge-holiday  { background: #ede9fe; color: #5b21b6; }
+    .badge-family   { background: #fef9c3; color: #713f12; }
+    .badge-work     { background: #e0f2fe; color: #0369a1; }
+    .badge-other    { background: var(--border); color: var(--muted); }
+    .event-meta { display: flex; flex-direction: column; gap: 4px; }
+    .event-meta-row { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--muted); }
+    .event-meta-row .icon { font-size: 0.9rem; }
+    .event-progress { margin-top: 4px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+    .progress-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .3s; }
+    .event-card-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .category-stripe {
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    }
+    .stripe-birthday { background: #ec4899; }
+    .stripe-wedding  { background: #f43f5e; }
+    .stripe-party    { background: #a855f7; }
+    .stripe-school   { background: #3b82f6; }
+    .stripe-sports   { background: #f97316; }
+    .stripe-holiday  { background: #8b5cf6; }
+    .stripe-family   { background: #eab308; }
+    .stripe-work     { background: #0ea5e9; }
+    .stripe-other    { background: var(--muted); }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center; padding: 60px 20px; color: var(--muted);
+    }
+    .empty-icon { font-size: 3.5rem; margin-bottom: 12px; }
+    .empty-title { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+
+    /* ── Modal ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 200;
+      align-items: flex-start; justify-content: center;
+      padding: 40px 16px; overflow-y: auto;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: var(--radius);
+      width: 100%; max-width: 580px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      animation: slideUp .2s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+    .modal-header {
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 1.15rem; font-weight: 700; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 1.4rem; color: var(--muted); line-height: 1; padding: 2px 6px; border-radius: 4px;
+    }
+    .modal-close:hover { background: var(--border); }
+    .modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ── Form ── */
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    label { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    input, select, textarea {
+      padding: 9px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 0.9rem; font-family: inherit;
+      background: var(--bg); color: var(--text); transition: border-color .15s;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--primary);
+      background: var(--surface);
+    }
+    textarea { resize: vertical; min-height: 72px; }
+
+    /* ── Guest list ── */
+    .guest-input-row { display: flex; gap: 8px; }
+    .guest-input-row input { flex: 1; }
+    .guest-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .guest-tag {
+      background: var(--primary-light); color: var(--primary);
+      font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 99px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .guest-tag button { background: none; border: none; cursor: pointer; color: var(--primary); font-size: 0.9rem; line-height:1; padding:0; }
+
+    /* ── Checklist ── */
+    .task-input-row { display: flex; gap: 8px; }
+    .task-input-row input { flex: 1; }
+    .task-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+    .task-item {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border-radius: 8px; padding: 8px 10px;
+    }
+    .task-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--primary); flex-shrink:0; cursor:pointer; }
+    .task-item label { font-size: 0.875rem; font-weight: 400; cursor:pointer; flex:1; }
+    .task-item label.done { text-decoration: line-through; color: var(--muted); }
+    .task-item .del-task { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1rem; margin-left: auto; flex-shrink:0; }
+    .task-item .del-task:hover { color: var(--red); }
+
+    /* ── Budget ── */
+    .budget-row { display: flex; gap: 8px; align-items: flex-end; }
+    .budget-row .form-group { flex: 1; }
+    .budget-items { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+    .budget-item {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg); border-radius: 8px; padding: 8px 12px;
+      font-size: 0.875rem;
+    }
+    .budget-item .item-name { flex: 1; }
+    .budget-item .item-cost { font-weight: 700; color: var(--accent); }
+    .budget-item .del-budget { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1rem; }
+    .budget-item .del-budget:hover { color: var(--red); }
+    .budget-total {
+      display: flex; justify-content: space-between; align-items: center;
+      background: var(--accent-light); border-radius: 8px; padding: 10px 14px;
+      font-weight: 700; margin-top: 4px;
+    }
+    .budget-total .total-val { color: var(--accent); font-size: 1.1rem; }
+
+    /* ── Detail view ── */
+    .detail-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px;
+    }
+    .detail-section-title {
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted); margin-bottom: 14px;
+    }
+    .detail-header {
+      display: flex; align-items: flex-start; gap: 16px;
+      margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .detail-title { font-size: 1.8rem; font-weight: 800; flex: 1; }
+    .detail-meta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .detail-meta-item { display: flex; flex-direction: column; gap: 2px; }
+    .detail-meta-key { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--muted); }
+    .detail-meta-val { font-size: 0.95rem; font-weight: 500; }
+    .back-btn { display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--primary); margin-bottom: 20px; padding: 0; }
+    .back-btn:hover { text-decoration: underline; }
+
+    /* ── Calendar ── */
+    .calendar-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .cal-btn { background: var(--primary-light); color: var(--primary); border: none; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-weight: 700; font-size: 1rem; }
+    .cal-btn:hover { background: #dde1fc; }
+    .cal-month { font-size: 1.2rem; font-weight: 700; }
+    .calendar-grid { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .cal-header-row { display: grid; grid-template-columns: repeat(7,1fr); background: var(--primary-light); }
+    .cal-header-cell { padding: 10px 0; text-align: center; font-size: 0.78rem; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+    .cal-body { display: grid; grid-template-columns: repeat(7,1fr); }
+    .cal-cell {
+      min-height: 80px; border-top: 1px solid var(--border); border-right: 1px solid var(--border);
+      padding: 6px 6px 4px; font-size: 0.82rem; position: relative;
+    }
+    .cal-cell:nth-child(7n) { border-right: none; }
+    .cal-day-num { font-weight: 700; color: var(--muted); font-size: 0.78rem; }
+    .cal-cell.today .cal-day-num { background: var(--primary); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .cal-cell.other-month { background: var(--bg); }
+    .cal-cell.other-month .cal-day-num { opacity: .35; }
+    .cal-event-dot {
+      font-size: 0.72rem; padding: 2px 6px; border-radius: 4px;
+      margin-top: 3px; cursor: pointer; truncate: true;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-weight: 600;
+    }
+
+    /* ── Search / filter bar ── */
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-bar input { flex: 1; min-width: 180px; }
+    .filter-bar select { min-width: 140px; }
+
+    /* ── Vendor Finder ── */
+    .vendor-search-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .vendor-search-bar input { flex: 1; min-width: 180px; }
+    .quick-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+    .chip {
+      padding: 6px 14px; border-radius: 99px; font-size: 0.82rem; font-weight: 600;
+      background: var(--primary-light); color: var(--primary); border: none;
+      cursor: pointer; transition: all .15s;
+    }
+    .chip:hover, .chip.selected { background: var(--primary); color: #fff; }
+    .vendor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .vendor-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: box-shadow .15s;
+    }
+    .vendor-card:hover { box-shadow: 0 4px 20px rgba(91,106,240,0.12); }
+    .vendor-name { font-size: 1rem; font-weight: 700; }
+    .vendor-stars { display: flex; align-items: center; gap: 5px; }
+    .stars { color: #f59e0b; font-size: 1rem; letter-spacing: 1px; }
+    .rating-num { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+    .rating-count { font-size: 0.78rem; color: var(--muted); }
+    .vendor-address { font-size: 0.82rem; color: var(--muted); display: flex; gap: 5px; align-items: flex-start; }
+    .vendor-status-open  { font-size: 0.78rem; font-weight: 700; color: var(--green); }
+    .vendor-status-closed{ font-size: 0.78rem; font-weight: 700; color: var(--red); }
+    .vendor-phone { font-size: 0.9rem; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+    .vendor-phone a { color: var(--primary); text-decoration: none; }
+    .vendor-phone a:hover { text-decoration: underline; }
+    .vendor-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .api-key-banner {
+      background: var(--accent-light); border: 1.5px solid #fcd9b5;
+      border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .api-key-banner-title { font-weight: 700; font-size: 0.95rem; }
+    .api-key-banner p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    .api-key-row { display: flex; gap: 8px; }
+    .api-key-row input { flex: 1; font-family: monospace; font-size: 0.82rem; }
+    .vendor-loading { text-align: center; padding: 40px; color: var(--muted); font-size: 0.95rem; }
+    .vendor-loading .spin { display: inline-block; animation: spin 1s linear infinite; font-size: 1.5rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Auth Screen ── */
+    #auth-screen {
+      display: none; position: fixed; inset: 0; z-index: 999;
+      background: linear-gradient(135deg, #eef0fe 0%, #f8f9ff 60%, #fff4ed 100%);
+      align-items: center; justify-content: center;
+    }
+    #auth-screen.visible { display: flex; }
+    .auth-card {
+      background: var(--surface); border-radius: 18px;
+      box-shadow: 0 8px 40px rgba(91,106,240,0.16);
+      padding: 40px 36px; width: 100%; max-width: 420px;
+    }
+    .auth-logo { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 28px; }
+    .auth-logo-icon { font-size: 2.2rem; }
+    .auth-logo-text { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+    .auth-tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
+    .auth-tab {
+      flex: 1; padding: 10px; text-align: center; font-weight: 700;
+      font-size: 0.9rem; cursor: pointer; color: var(--muted);
+      border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s;
+    }
+    .auth-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .auth-form { display: flex; flex-direction: column; gap: 14px; }
+    .auth-form input { padding: 11px 14px; font-size: 0.95rem; }
+    .auth-submit {
+      width: 100%; padding: 12px; font-size: 1rem; font-weight: 700;
+      background: var(--primary); color: #fff; border: none;
+      border-radius: 10px; cursor: pointer; margin-top: 4px; transition: background .15s;
+    }
+    .auth-submit:hover { background: #4454e0; }
+    .auth-error { color: var(--red); font-size: 0.82rem; font-weight: 600; text-align: center; display: none; }
+    .auth-divider { text-align: center; font-size: 0.78rem; color: var(--muted); margin: 4px 0; }
+    .user-pill {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--primary-light); border-radius: 99px;
+      padding: 5px 14px 5px 8px; font-size: 0.85rem; font-weight: 600; color: var(--primary);
+    }
+    .user-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--primary); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 800; flex-shrink: 0;
+    }
+    .logout-btn {
+      background: none; border: none; cursor: pointer; color: var(--muted);
+      font-size: 0.8rem; padding: 2px 4px; margin-left: 2px;
+    }
+    .logout-btn:hover { color: var(--red); }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      nav { display: none; }
+      main { padding: 16px; }
+      .form-row { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen" class="visible">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="auth-logo-icon">🎉</span>
+      <span class="auth-logo-text">Event Planner</span>
+    </div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Log In</div>
+      <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
+    </div>
+    <!-- Login form -->
+    <div id="form-login" class="auth-form">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input id="login-email" type="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input id="login-password" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <div class="auth-error" id="login-error"></div>
+      <button class="auth-submit" onclick="doLogin()">Log In</button>
+      <div class="auth-divider">Don't have an account? <a href="#" onclick="switchAuthTab('signup');return false" style="color:var(--primary);font-weight:700">Sign up</a></div>
+    </div>
+    <!-- Sign up form -->
+    <div id="form-signup" class="auth-form" style="display:none">
+      <div class="form-group">
+        <label for="signup-name">Your Name</label>
+        <input id="signup-name" type="text" placeholder="Jane Smith" onkeydown="if(event.key==='Enter')doSignup()" />
+      </div>
+      <div class="form-group">
+        <label for="signup-email">Email</label>
+        <input id="signup-email" type="email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doSignup()" />
+      </div>
+      <div class="form-group">
+        <label for="signup-password">Password</label>
+        <input id="signup-password" type="password" placeholder="At least 6 characters" onkeydown="if(event.key==='Enter')doSignup()" />
+      </div>
+      <div class="form-group">
+        <label for="signup-confirm">Confirm Password</label>
+        <input id="signup-confirm" type="password" placeholder="Repeat password" onkeydown="if(event.key==='Enter')doSignup()" />
+      </div>
+      <div class="auth-error" id="signup-error"></div>
+      <button class="auth-submit" onclick="doSignup()">Create Account</button>
+      <div class="auth-divider">Already have an account? <a href="#" onclick="switchAuthTab('login');return false" style="color:var(--primary);font-weight:700">Log in</a></div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <span class="logo-icon">🎉</span>
+    <span>Event Planner</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="user-pill" id="user-pill" style="display:none">
+      <div class="user-avatar" id="user-avatar"></div>
+      <span id="user-display"></span>
+      <button class="logout-btn" onclick="doLogout()" title="Log out">✕</button>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">+ New Event</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">🏠</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="events" onclick="showPage('events',this)">
+      <span class="nav-icon">📋</span> All Events
+    </div>
+    <div class="nav-item" data-page="calendar" onclick="showPage('calendar',this)">
+      <span class="nav-icon">📅</span> Calendar
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="events" onclick="filterCategory('birthday')">
+      <span class="nav-icon">🎂</span> Birthdays
+    </div>
+    <div class="nav-item" data-page="events" onclick="filterCategory('wedding')">
+      <span class="nav-icon">💍</span> Weddings
+    </div>
+    <div class="nav-item" data-page="events" onclick="filterCategory('party')">
+      <span class="nav-icon">🥳</span> Parties
+    </div>
+    <div class="nav-item" data-page="events" onclick="filterCategory('sports')">
+      <span class="nav-icon">⚽</span> Sports
+    </div>
+    <div class="nav-item" data-page="events" onclick="filterCategory('work')">
+      <span class="nav-icon">💼</span> Work
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="vendors" onclick="showPage('vendors',this)">
+      <span class="nav-icon">🔍</span> Find Vendors
+    </div>
+  </nav>
+
+  <main>
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Welcome back! 👋</div>
+          <div class="page-subtitle" id="dash-subtitle">Here's what's coming up.</div>
+        </div>
+      </div>
+
+      <div class="stats-row" id="stats-row"></div>
+
+      <div class="page-header" style="margin-bottom:16px">
+        <div class="page-title" style="font-size:1.1rem">Upcoming Events</div>
+      </div>
+      <div class="events-grid" id="upcoming-grid"></div>
+    </div>
+
+    <!-- All Events -->
+    <div class="page" id="page-events">
+      <div class="page-header">
+        <div class="page-title">All Events</div>
+        <button class="btn btn-primary" onclick="openModal()">+ New Event</button>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="search-input" placeholder="Search events…" oninput="renderEvents()" />
+        <select id="filter-category" onchange="renderEvents()">
+          <option value="">All Categories</option>
+          <option value="birthday">Birthday Party</option>
+          <option value="wedding">Wedding</option>
+          <option value="party">Party / Celebration</option>
+          <option value="school">School Event</option>
+          <option value="sports">Sports</option>
+          <option value="holiday">Holiday</option>
+          <option value="family">Family Gathering</option>
+          <option value="work">Work / Conference</option>
+          <option value="other">Other</option>
+        </select>
+        <select id="filter-sort" onchange="renderEvents()">
+          <option value="date-asc">Date (Soonest)</option>
+          <option value="date-desc">Date (Latest)</option>
+          <option value="name">Name A–Z</option>
+        </select>
+      </div>
+      <div class="events-grid" id="all-events-grid"></div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="page" id="page-calendar">
+      <div class="page-header">
+        <div class="page-title">Calendar</div>
+      </div>
+      <div class="calendar-nav">
+        <button class="cal-btn" onclick="calNav(-1)">&#8592;</button>
+        <span class="cal-month" id="cal-month-label"></span>
+        <button class="cal-btn" onclick="calNav(1)">&#8594;</button>
+        <button class="cal-btn" onclick="calToday()" style="margin-left:auto">Today</button>
+      </div>
+      <div class="calendar-grid">
+        <div class="cal-header-row">
+          <div class="cal-header-cell">Sun</div>
+          <div class="cal-header-cell">Mon</div>
+          <div class="cal-header-cell">Tue</div>
+          <div class="cal-header-cell">Wed</div>
+          <div class="cal-header-cell">Thu</div>
+          <div class="cal-header-cell">Fri</div>
+          <div class="cal-header-cell">Sat</div>
+        </div>
+        <div class="cal-body" id="cal-body"></div>
+      </div>
+    </div>
+
+    <!-- Vendor Finder -->
+    <div class="page" id="page-vendors">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Find Vendors</div>
+          <div class="page-subtitle">Search top-rated local services for your event</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openApiKeyBanner()" title="API Key Settings">⚙️ API Key</button>
+      </div>
+
+      <div class="api-key-banner" id="api-key-banner">
+        <div class="api-key-banner-title">🗝️ Google Places API Key Required</div>
+        <p>This feature uses the Google Places API to find real, top-rated local vendors with phone numbers.<br>
+           Get a free key at <b>console.cloud.google.com</b> → enable <b>Maps JavaScript API</b> + <b>Places API</b>.</p>
+        <div class="api-key-row">
+          <input type="password" id="api-key-input" placeholder="Paste your Google API key here…" />
+          <button class="btn btn-primary btn-sm" onclick="saveApiKey()">Save Key</button>
+        </div>
+      </div>
+
+      <div class="vendor-search-bar">
+        <input id="vendor-query" type="text" placeholder="What do you need? e.g. clown, DJ, caterer…"
+               onkeydown="if(event.key==='Enter')searchVendors()" />
+        <input id="vendor-location" type="text" placeholder="City or zip code"
+               onkeydown="if(event.key==='Enter')searchVendors()" />
+        <button class="btn btn-primary" onclick="searchVendors()">🔍 Search</button>
+        <button class="btn btn-secondary" onclick="useMyLocation()" title="Use my location">📍</button>
+      </div>
+
+      <div class="quick-chips">
+        <button class="chip" onclick="quickSearch('clown')">🤡 Clown</button>
+        <button class="chip" onclick="quickSearch('DJ')">🎵 DJ</button>
+        <button class="chip" onclick="quickSearch('caterer')">🍽️ Caterer</button>
+        <button class="chip" onclick="quickSearch('birthday cake bakery')">🎂 Baker</button>
+        <button class="chip" onclick="quickSearch('event photographer')">📸 Photographer</button>
+        <button class="chip" onclick="quickSearch('party entertainer')">🎪 Entertainer</button>
+        <button class="chip" onclick="quickSearch('florist')">💐 Florist</button>
+        <button class="chip" onclick="quickSearch('face painter')">🎨 Face Painter</button>
+        <button class="chip" onclick="quickSearch('bounce house rental')">🏰 Bounce House</button>
+        <button class="chip" onclick="quickSearch('magician')">🪄 Magician</button>
+        <button class="chip" onclick="quickSearch('event venue')">🏛️ Venue</button>
+        <button class="chip" onclick="quickSearch('limo service')">🚘 Limo</button>
+      </div>
+
+      <div id="vendor-results"></div>
+      <!-- Hidden map required by Places API -->
+      <div id="map-dummy" style="width:1px;height:1px;position:absolute;opacity:0;pointer-events:none"></div>
+    </div>
+
+    <!-- Detail -->
+    <div class="page" id="page-detail">
+      <button class="back-btn" onclick="showPage('events', document.querySelector('[data-page=events]'))">&#8592; Back to Events</button>
+      <div id="detail-content"></div>
+    </div>
+  </main>
+</div>
+
+<!-- New / Edit Event Modal -->
+<div class="overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">New Event</span>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id" />
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="ev-name">Event Name *</label>
+          <input id="ev-name" type="text" placeholder="e.g. Emma's 7th Birthday" />
+        </div>
+        <div class="form-group">
+          <label for="ev-category">Category *</label>
+          <select id="ev-category">
+            <option value="birthday">Birthday Party</option>
+            <option value="wedding">Wedding</option>
+            <option value="party">Party / Celebration</option>
+            <option value="school">School Event</option>
+            <option value="sports">Sports</option>
+            <option value="holiday">Holiday</option>
+            <option value="family">Family Gathering</option>
+            <option value="work">Work / Conference</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="ev-date">Date *</label>
+          <input id="ev-date" type="date" />
+        </div>
+        <div class="form-group">
+          <label for="ev-time">Time</label>
+          <input id="ev-time" type="time" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="ev-location">Location</label>
+        <input id="ev-location" type="text" placeholder="e.g. Community Park, 123 Main St" />
+      </div>
+
+      <!-- Guests -->
+      <div class="form-group">
+        <label>Guest List</label>
+        <div class="guest-input-row">
+          <input id="guest-input" type="text" placeholder="Add a name and press Enter" onkeydown="addGuestKey(event)" />
+          <button class="btn btn-secondary btn-sm" onclick="addGuest()">Add</button>
+        </div>
+        <div class="guest-tags" id="guest-tags"></div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="form-group">
+        <label>Checklist / Tasks</label>
+        <div class="task-input-row">
+          <input id="task-input" type="text" placeholder="Add a task and press Enter" onkeydown="addTaskKey(event)" />
+          <button class="btn btn-secondary btn-sm" onclick="addTask()">Add</button>
+        </div>
+        <div class="task-list" id="task-list"></div>
+      </div>
+
+      <!-- Budget -->
+      <div class="form-group">
+        <label>Budget Items</label>
+        <div class="budget-row">
+          <div class="form-group">
+            <input id="budget-name-input" type="text" placeholder="Item name" />
+          </div>
+          <div class="form-group">
+            <input id="budget-cost-input" type="number" min="0" step="0.01" placeholder="$0.00" style="max-width:100px" onkeydown="addBudgetKey(event)" />
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="addBudgetItem()" style="flex-shrink:0;margin-bottom:0">Add</button>
+        </div>
+        <div class="budget-items" id="budget-items"></div>
+        <div class="budget-total" id="budget-total" style="display:none">
+          <span>Total Budget</span>
+          <span class="total-val" id="budget-total-val">$0.00</span>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="form-group">
+        <label for="ev-notes">Notes</label>
+        <textarea id="ev-notes" placeholder="Themes, reminders, special requirements…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+let events = JSON.parse(localStorage.getItem('fep_events') || '[]');
+let editingGuests = [];
+let editingTasks  = [];
+let editingBudget = [];
+let calYear, calMonth;
+
+const CATEGORIES = {
+  birthday: { label: 'Birthday Party',    emoji: '🎂', badge: 'badge-birthday', stripe: 'stripe-birthday', dot: '#ec4899' },
+  wedding:  { label: 'Wedding',           emoji: '💍', badge: 'badge-wedding',  stripe: 'stripe-wedding',  dot: '#f43f5e' },
+  party:    { label: 'Party',             emoji: '🥳', badge: 'badge-party',    stripe: 'stripe-party',    dot: '#a855f7' },
+  school:   { label: 'School Event',      emoji: '🎒', badge: 'badge-school',   stripe: 'stripe-school',   dot: '#3b82f6' },
+  sports:   { label: 'Sports',            emoji: '⚽', badge: 'badge-sports',   stripe: 'stripe-sports',   dot: '#f97316' },
+  holiday:  { label: 'Holiday',           emoji: '🎄', badge: 'badge-holiday',  stripe: 'stripe-holiday',  dot: '#8b5cf6' },
+  family:   { label: 'Family Gathering',  emoji: '👨‍👩‍👧', badge: 'badge-family',  stripe: 'stripe-family',   dot: '#eab308' },
+  work:     { label: 'Work / Conference', emoji: '💼', badge: 'badge-work',     stripe: 'stripe-work',     dot: '#0ea5e9' },
+  other:    { label: 'Other',             emoji: '📌', badge: 'badge-other',    stripe: 'stripe-other',    dot: '#6b7280' },
+};
+
+// ── Persist ────────────────────────────────────────────────────────────
+function save() { localStorage.setItem('fep_events', JSON.stringify(events)); }
+
+// ── Page nav ───────────────────────────────────────────────────────────
+function showPage(id, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'events') renderEvents();
+  if (id === 'calendar') renderCalendar();
+}
+
+function filterCategory(cat) {
+  document.getElementById('filter-category').value = cat;
+  showPage('events', document.querySelector('[data-page=events]'));
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────
+function openModal(id) {
+  editingGuests = [];
+  editingTasks  = [];
+  editingBudget = [];
+  document.getElementById('edit-id').value = '';
+  document.getElementById('modal-title').textContent = 'New Event';
+  document.getElementById('ev-name').value = '';
+  document.getElementById('ev-category').value = 'birthday';
+  document.getElementById('ev-date').value = '';
+  document.getElementById('ev-time').value = '';
+  document.getElementById('ev-location').value = '';
+  document.getElementById('ev-notes').value = '';
+  if (id) {
+    const ev = events.find(e => e.id === id);
+    if (ev) {
+      document.getElementById('modal-title').textContent = 'Edit Event';
+      document.getElementById('edit-id').value = ev.id;
+      document.getElementById('ev-name').value = ev.name;
+      document.getElementById('ev-category').value = ev.category;
+      document.getElementById('ev-date').value = ev.date;
+      document.getElementById('ev-time').value = ev.time || '';
+      document.getElementById('ev-location').value = ev.location || '';
+      document.getElementById('ev-notes').value = ev.notes || '';
+      editingGuests = [...(ev.guests || [])];
+      editingTasks  = (ev.tasks || []).map(t => ({...t}));
+      editingBudget = (ev.budget || []).map(b => ({...b}));
+    }
+  }
+  renderGuestTags();
+  renderTaskList();
+  renderBudgetItems();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); }
+
+// ── Guests ────────────────────────────────────────────────────────────
+function addGuestKey(e) { if (e.key === 'Enter') { e.preventDefault(); addGuest(); } }
+function addGuest() {
+  const inp = document.getElementById('guest-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  editingGuests.push(val);
+  inp.value = '';
+  renderGuestTags();
+}
+function removeGuest(i) { editingGuests.splice(i, 1); renderGuestTags(); }
+function renderGuestTags() {
+  document.getElementById('guest-tags').innerHTML = editingGuests.map((g, i) =>
+    `<span class="guest-tag">${g}<button onclick="removeGuest(${i})" title="Remove">×</button></span>`
+  ).join('');
+}
+
+// ── Tasks ─────────────────────────────────────────────────────────────
+function addTaskKey(e) { if (e.key === 'Enter') { e.preventDefault(); addTask(); } }
+function addTask() {
+  const inp = document.getElementById('task-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  editingTasks.push({ text: val, done: false });
+  inp.value = '';
+  renderTaskList();
+}
+function removeTask(i) { editingTasks.splice(i, 1); renderTaskList(); }
+function toggleTask(i) { editingTasks[i].done = !editingTasks[i].done; renderTaskList(); }
+function renderTaskList() {
+  document.getElementById('task-list').innerHTML = editingTasks.map((t, i) =>
+    `<div class="task-item">
+      <input type="checkbox" id="mt${i}" ${t.done?'checked':''} onchange="toggleTask(${i})" />
+      <label for="mt${i}" class="${t.done?'done':''}">${t.text}</label>
+      <button class="del-task" onclick="removeTask(${i})" title="Remove">×</button>
+    </div>`
+  ).join('');
+}
+
+// ── Budget ────────────────────────────────────────────────────────────
+function addBudgetKey(e) { if (e.key === 'Enter') { e.preventDefault(); addBudgetItem(); } }
+function addBudgetItem() {
+  const name = document.getElementById('budget-name-input').value.trim();
+  const cost = parseFloat(document.getElementById('budget-cost-input').value);
+  if (!name || isNaN(cost) || cost < 0) return;
+  editingBudget.push({ name, cost });
+  document.getElementById('budget-name-input').value = '';
+  document.getElementById('budget-cost-input').value = '';
+  renderBudgetItems();
+}
+function removeBudget(i) { editingBudget.splice(i, 1); renderBudgetItems(); }
+function renderBudgetItems() {
+  const el = document.getElementById('budget-items');
+  const totEl = document.getElementById('budget-total');
+  el.innerHTML = editingBudget.map((b, i) =>
+    `<div class="budget-item">
+      <span class="item-name">${b.name}</span>
+      <span class="item-cost">$${b.cost.toFixed(2)}</span>
+      <button class="del-budget" onclick="removeBudget(${i})">×</button>
+    </div>`
+  ).join('');
+  const total = editingBudget.reduce((s, b) => s + b.cost, 0);
+  if (editingBudget.length > 0) {
+    totEl.style.display = 'flex';
+    document.getElementById('budget-total-val').textContent = '$' + total.toFixed(2);
+  } else {
+    totEl.style.display = 'none';
+  }
+}
+
+// ── Save Event ────────────────────────────────────────────────────────
+function saveEvent() {
+  const name = document.getElementById('ev-name').value.trim();
+  const date = document.getElementById('ev-date').value;
+  if (!name || !date) { alert('Please fill in at least the event name and date.'); return; }
+  const id = document.getElementById('edit-id').value || Date.now().toString();
+  const ev = {
+    id, name, date,
+    category: document.getElementById('ev-category').value,
+    time: document.getElementById('ev-time').value,
+    location: document.getElementById('ev-location').value.trim(),
+    notes: document.getElementById('ev-notes').value.trim(),
+    guests: [...editingGuests],
+    tasks: editingTasks.map(t => ({...t})),
+    budget: editingBudget.map(b => ({...b})),
+    createdAt: document.getElementById('edit-id').value
+      ? (events.find(e=>e.id===id)||{}).createdAt || Date.now()
+      : Date.now(),
+  };
+  const idx = events.findIndex(e => e.id === id);
+  if (idx >= 0) events[idx] = ev; else events.push(ev);
+  save();
+  closeModal();
+  renderDashboard();
+  renderEvents();
+  renderCalendar();
+}
+
+// ── Delete Event ──────────────────────────────────────────────────────
+function deleteEvent(id) {
+  if (!confirm('Delete this event? This cannot be undone.')) return;
+  events = events.filter(e => e.id !== id);
+  save();
+  renderDashboard();
+  renderEvents();
+  renderCalendar();
+  showPage('events', document.querySelector('[data-page=events]'));
+}
+
+// ── Detail Page ───────────────────────────────────────────────────────
+function openDetail(id) {
+  const ev = events.find(e => e.id === id);
+  if (!ev) return;
+  const cat = CATEGORIES[ev.category] || CATEGORIES.other;
+  const doneCount = (ev.tasks||[]).filter(t=>t.done).length;
+  const totalTasks = (ev.tasks||[]).length;
+  const pct = totalTasks ? Math.round(doneCount/totalTasks*100) : 0;
+  const totalBudget = (ev.budget||[]).reduce((s,b)=>s+b.cost,0);
+
+  let html = `
+    <div class="detail-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+          <span class="event-badge ${cat.badge}">${cat.emoji} ${cat.label}</span>
+        </div>
+        <div class="detail-title">${ev.name}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="openModal('${ev.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">Delete</button>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Event Details</div>
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item"><div class="detail-meta-key">📅 Date</div><div class="detail-meta-val">${formatDate(ev.date)}</div></div>
+        ${ev.time ? `<div class="detail-meta-item"><div class="detail-meta-key">⏰ Time</div><div class="detail-meta-val">${formatTime(ev.time)}</div></div>` : ''}
+        ${ev.location ? `<div class="detail-meta-item"><div class="detail-meta-key">📍 Location</div><div class="detail-meta-val">${ev.location}</div></div>` : ''}
+        <div class="detail-meta-item"><div class="detail-meta-key">👥 Guests</div><div class="detail-meta-val">${(ev.guests||[]).length} invited</div></div>
+        ${totalBudget > 0 ? `<div class="detail-meta-item"><div class="detail-meta-key">💰 Budget</div><div class="detail-meta-val">$${totalBudget.toFixed(2)}</div></div>` : ''}
+      </div>
+    </div>`;
+
+  if ((ev.guests||[]).length > 0) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Guest List (${ev.guests.length})</div>
+      <div class="guest-tags">${ev.guests.map(g=>`<span class="guest-tag">${g}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  if (totalTasks > 0) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Checklist</div>
+      <div class="event-progress" style="margin-bottom:12px">
+        <div class="progress-label"><span>${doneCount} of ${totalTasks} done</span><span>${pct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="task-list">`;
+    ev.tasks.forEach((t,i) => {
+      html += `<div class="task-item">
+        <input type="checkbox" id="dt${i}" ${t.done?'checked':''} onchange="toggleDetailTask('${ev.id}',${i})" />
+        <label for="dt${i}" class="${t.done?'done':''}">${t.text}</label>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  if ((ev.budget||[]).length > 0) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Budget</div>
+      <div class="budget-items">`;
+    ev.budget.forEach(b => {
+      html += `<div class="budget-item"><span class="item-name">${b.name}</span><span class="item-cost">$${b.cost.toFixed(2)}</span></div>`;
+    });
+    html += `</div>
+      <div class="budget-total"><span>Total</span><span class="total-val">$${totalBudget.toFixed(2)}</span></div>
+    </div>`;
+  }
+
+  if (ev.notes) {
+    html += `<div class="detail-section">
+      <div class="detail-section-title">Notes</div>
+      <p style="font-size:.9rem;line-height:1.6;white-space:pre-wrap">${ev.notes}</p>
+    </div>`;
+  }
+
+  document.getElementById('detail-content').innerHTML = html;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+}
+
+function toggleDetailTask(evId, idx) {
+  const ev = events.find(e => e.id === evId);
+  if (!ev || !ev.tasks[idx]) return;
+  ev.tasks[idx].done = !ev.tasks[idx].done;
+  save();
+  openDetail(evId);
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────
+function renderDashboard() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = events
+    .filter(e => new Date(e.date + 'T00:00:00') >= today)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 6);
+  const thisMonth = events.filter(e => {
+    const d = new Date(e.date+'T00:00:00');
+    return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  });
+  const totalGuests = events.reduce((s,e)=>s+(e.guests||[]).length,0);
+  const totalBudget = events.reduce((s,e)=>s+(e.budget||[]).reduce((ss,b)=>ss+b.cost,0),0);
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card blue"><div class="stat-label">Total Events</div><div class="stat-value">${events.length}</div></div>
+    <div class="stat-card orange"><div class="stat-label">This Month</div><div class="stat-value">${thisMonth.length}</div></div>
+    <div class="stat-card green"><div class="stat-label">Total Guests</div><div class="stat-value">${totalGuests}</div></div>
+    <div class="stat-card yellow"><div class="stat-label">Total Budget</div><div class="stat-value">$${totalBudget.toFixed(0)}</div></div>
+  `;
+
+  const grid = document.getElementById('upcoming-grid');
+  if (upcoming.length === 0) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">📅</div>
+      <div class="empty-title">No upcoming events</div>
+      <div>Click <b>+ New Event</b> to add your first family event!</div>
+    </div>`;
+  } else {
+    grid.innerHTML = upcoming.map(e => eventCard(e)).join('');
+  }
+}
+
+// ── Events Page ───────────────────────────────────────────────────────
+function renderEvents() {
+  const q = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const cat = document.getElementById('filter-category')?.value||'';
+  const sort = document.getElementById('filter-sort')?.value||'date-asc';
+  let list = events.filter(e =>
+    (!q || e.name.toLowerCase().includes(q) || (e.location||'').toLowerCase().includes(q)) &&
+    (!cat || e.category === cat)
+  );
+  if (sort === 'date-asc') list.sort((a,b)=>a.date.localeCompare(b.date));
+  else if (sort === 'date-desc') list.sort((a,b)=>b.date.localeCompare(a.date));
+  else list.sort((a,b)=>a.name.localeCompare(b.name));
+
+  const grid = document.getElementById('all-events-grid');
+  if (list.length === 0) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">No events found</div>
+      <div>Try adjusting your search or filters.</div>
+    </div>`;
+  } else {
+    grid.innerHTML = list.map(e => eventCard(e)).join('');
+  }
+}
+
+function eventCard(ev) {
+  const cat = CATEGORIES[ev.category] || CATEGORIES.other;
+  const doneCount = (ev.tasks||[]).filter(t=>t.done).length;
+  const totalTasks = (ev.tasks||[]).length;
+  const pct = totalTasks ? Math.round(doneCount/totalTasks*100) : -1;
+  const daysUntil = daysUntilEvent(ev.date);
+  const daysLabel = daysUntil < 0
+    ? `<span style="color:var(--muted)">${Math.abs(daysUntil)}d ago</span>`
+    : daysUntil === 0 ? `<span style="color:var(--green);font-weight:700">Today!</span>`
+    : daysUntil === 1 ? `<span style="color:var(--accent);font-weight:700">Tomorrow</span>`
+    : `<span>In ${daysUntil} days</span>`;
+
+  return `<div class="event-card" onclick="openDetail('${ev.id}')">
+    <div class="category-stripe ${cat.stripe}"></div>
+    <div class="event-card-top">
+      <div class="event-card-title">${ev.name}</div>
+      <span class="event-badge ${cat.badge}">${cat.emoji} ${cat.label}</span>
+    </div>
+    <div class="event-meta">
+      <div class="event-meta-row"><span class="icon">📅</span>${formatDate(ev.date)} &nbsp;•&nbsp; ${daysLabel}</div>
+      ${ev.time ? `<div class="event-meta-row"><span class="icon">⏰</span>${formatTime(ev.time)}</div>` : ''}
+      ${ev.location ? `<div class="event-meta-row"><span class="icon">📍</span>${ev.location}</div>` : ''}
+      ${(ev.guests||[]).length ? `<div class="event-meta-row"><span class="icon">👥</span>${ev.guests.length} guest${ev.guests.length!==1?'s':''}</div>` : ''}
+    </div>
+    ${pct >= 0 ? `<div class="event-progress">
+      <div class="progress-label"><span>Tasks</span><span>${doneCount}/${totalTasks}</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>` : ''}
+    <div class="event-card-actions" onclick="event.stopPropagation()">
+      <button class="btn btn-secondary btn-sm" onclick="openModal('${ev.id}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteEvent('${ev.id}')">Delete</button>
+    </div>
+  </div>`;
+}
+
+// ── Calendar ──────────────────────────────────────────────────────────
+function initCal() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+}
+function calNav(d) { calMonth += d; if (calMonth > 11) { calMonth=0; calYear++; } if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); }
+function calToday() { const n=new Date(); calYear=n.getFullYear(); calMonth=n.getMonth(); renderCalendar(); }
+
+function renderCalendar() {
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
+  const first = new Date(calYear, calMonth, 1);
+  const last  = new Date(calYear, calMonth+1, 0);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cells = [];
+  for (let i = 0; i < first.getDay(); i++) cells.push({ date: new Date(calYear, calMonth, -first.getDay()+i+1), other: true });
+  for (let d = 1; d <= last.getDate(); d++) cells.push({ date: new Date(calYear, calMonth, d), other: false });
+  while (cells.length % 7 !== 0) cells.push({ date: new Date(calYear, calMonth+1, cells.length - last.getDate() - first.getDay() + 1), other: true });
+
+  const evMap = {};
+  events.forEach(e => { (evMap[e.date] = evMap[e.date]||[]).push(e); });
+
+  document.getElementById('cal-body').innerHTML = cells.map(c => {
+    const key = isoDate(c.date);
+    const isToday = c.date.getTime() === today.getTime();
+    const dayEvs = evMap[key] || [];
+    const dayNumHtml = isToday
+      ? `<div class="cal-day-num">${c.date.getDate()}</div>`
+      : `<div class="cal-day-num">${c.date.getDate()}</div>`;
+    const dots = dayEvs.slice(0,3).map(e => {
+      const cat = CATEGORIES[e.category]||CATEGORIES.other;
+      return `<div class="cal-event-dot" style="background:${cat.dot}22;color:${cat.dot}" onclick="event.stopPropagation();openDetail('${e.id}')" title="${e.name}">${cat.emoji} ${e.name}</div>`;
+    }).join('') + (dayEvs.length>3 ? `<div class="cal-event-dot" style="background:#e5e7eb;color:#6b7280">+${dayEvs.length-3} more</div>` : '');
+    return `<div class="cal-cell${c.other?' other-month':''}${isToday?' today':''}">${dayNumHtml}${dots}</div>`;
+  }).join('');
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return new Date(+y,+m-1,+day).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+}
+function formatTime(t) {
+  if (!t) return '';
+  const [h,m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${h%12||12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+function isoDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function daysUntilEvent(dateStr) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const evDate = new Date(dateStr + 'T00:00:00');
+  return Math.round((evDate - today) / 86400000);
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────
+let currentUser = null;
+
+function getUsers() { return JSON.parse(localStorage.getItem('fep_users') || '[]'); }
+function saveUsers(u) { localStorage.setItem('fep_users', JSON.stringify(u)); }
+
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('form-login').style.display = tab === 'login' ? 'flex' : 'none';
+  document.getElementById('form-signup').style.display = tab === 'signup' ? 'flex' : 'none';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('signup-error').style.display = 'none';
+}
+
+function showAuthError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-password').value;
+  if (!email || !pass) { showAuthError('login-error','Please fill in all fields.'); return; }
+  const users = getUsers();
+  const user = users.find(u => u.email === email);
+  if (!user) { showAuthError('login-error','No account found with that email.'); return; }
+  if (user.password !== btoa(pass)) { showAuthError('login-error','Incorrect password.'); return; }
+  loginSuccess(user);
+}
+
+function doSignup() {
+  const name  = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('signup-password').value;
+  const conf  = document.getElementById('signup-confirm').value;
+  if (!name || !email || !pass || !conf) { showAuthError('signup-error','Please fill in all fields.'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showAuthError('signup-error','Please enter a valid email.'); return; }
+  if (pass.length < 6) { showAuthError('signup-error','Password must be at least 6 characters.'); return; }
+  if (pass !== conf) { showAuthError('signup-error','Passwords do not match.'); return; }
+  const users = getUsers();
+  if (users.find(u => u.email === email)) { showAuthError('signup-error','An account with that email already exists.'); return; }
+  const user = { id: Date.now().toString(), name, email, password: btoa(pass) };
+  users.push(user);
+  saveUsers(users);
+  loginSuccess(user);
+}
+
+function loginSuccess(user) {
+  currentUser = user;
+  localStorage.setItem('fep_session', user.id);
+  document.getElementById('auth-screen').classList.remove('visible');
+  document.getElementById('user-pill').style.display = 'flex';
+  document.getElementById('user-display').textContent = user.name || user.email.split('@')[0];
+  document.getElementById('user-avatar').textContent = (user.name || user.email)[0].toUpperCase();
+  document.getElementById('dash-subtitle').textContent = `Welcome, ${user.name || 'there'}! Here's what's coming up.`;
+  renderDashboard();
+}
+
+function doLogout() {
+  currentUser = null;
+  localStorage.removeItem('fep_session');
+  document.getElementById('auth-screen').classList.add('visible');
+  document.getElementById('user-pill').style.display = 'none';
+  // Clear form fields
+  ['login-email','login-password','signup-name','signup-email','signup-password','signup-confirm']
+    .forEach(id => document.getElementById(id).value = '');
+  ['login-error','signup-error'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  switchAuthTab('login');
+}
+
+function checkSession() {
+  const sid = localStorage.getItem('fep_session');
+  if (!sid) return;
+  const user = getUsers().find(u => u.id === sid);
+  if (user) loginSuccess(user);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+initCal();
+renderDashboard();
+renderCalendar();
+checkSession();
+
+// ── Vendor Finder ─────────────────────────────────────────────────────
+let googleApiKey = localStorage.getItem('fep_maps_key') || '';
+let mapsLoaded = false;
+let placesService = null;
+
+function initVendorPage() {
+  document.getElementById('api-key-banner').style.display = googleApiKey ? 'none' : 'flex';
+  if (googleApiKey) document.getElementById('api-key-input').value = googleApiKey;
+}
+
+function openApiKeyBanner() {
+  const banner = document.getElementById('api-key-banner');
+  banner.style.display = banner.style.display === 'none' ? 'flex' : 'none';
+}
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { alert('Please paste a valid API key.'); return; }
+  googleApiKey = key;
+  localStorage.setItem('fep_maps_key', key);
+  document.getElementById('api-key-banner').style.display = 'none';
+  mapsLoaded = false; // force reload with new key
+  placesService = null;
+  alert('API key saved! Now search for vendors.');
+}
+
+function loadMapsAPI() {
+  return new Promise((resolve, reject) => {
+    if (mapsLoaded && window.google && window.google.maps) { resolve(); return; }
+    if (!googleApiKey) { reject(new Error('no_key')); return; }
+    window._mapsReady = () => { mapsLoaded = true; resolve(); };
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&libraries=places&callback=_mapsReady`;
+    s.onerror = () => reject(new Error('load_fail'));
+    document.head.appendChild(s);
+  });
+}
+
+function getPlacesService() {
+  if (!placesService) {
+    const map = new google.maps.Map(document.getElementById('map-dummy'), { center: {lat:0,lng:0}, zoom:1 });
+    placesService = new google.maps.places.PlacesService(map);
+  }
+  return placesService;
+}
+
+function quickSearch(type) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  event.target.classList.add('selected');
+  document.getElementById('vendor-query').value = type;
+  searchVendors();
+}
+
+function useMyLocation() {
+  if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('vendor-location').value = `${pos.coords.latitude},${pos.coords.longitude}`;
+  }, () => alert('Could not get your location.'));
+}
+
+async function searchVendors() {
+  const query = document.getElementById('vendor-query').value.trim();
+  const location = document.getElementById('vendor-location').value.trim();
+  if (!query) { alert('Please enter what you\'re looking for (e.g. "clown", "DJ").'); return; }
+
+  const resultsEl = document.getElementById('vendor-results');
+  resultsEl.innerHTML = '<div class="vendor-loading"><span class="spin">⏳</span> Searching…</div>';
+
+  try {
+    await loadMapsAPI();
+  } catch(e) {
+    if (e.message === 'no_key') {
+      resultsEl.innerHTML = '';
+      document.getElementById('api-key-banner').style.display = 'flex';
+      return;
+    }
+    resultsEl.innerHTML = `<div class="empty"><div class="empty-icon">❌</div><div class="empty-title">Failed to load Maps API</div><div>Check your API key and make sure Maps JavaScript API + Places API are enabled.</div></div>`;
+    return;
+  }
+
+  const svc = getPlacesService();
+  const searchQuery = location ? `${query} near ${location}` : query;
+
+  svc.textSearch({ query: searchQuery }, (results, status) => {
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !results.length) {
+      resultsEl.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">No results found</div><div>Try a different search or location.</div></div>`;
+      return;
+    }
+    const sorted = [...results].sort((a,b) => (b.rating||0) - (a.rating||0));
+    resultsEl.innerHTML = `
+      <div style="font-size:.82rem;color:var(--muted);margin-bottom:14px">
+        Found ${sorted.length} result${sorted.length!==1?'s':''} — sorted by rating
+      </div>
+      <div class="vendor-grid">${sorted.map(renderVendorCard).join('')}</div>`;
+  });
+}
+
+function renderVendorCard(place) {
+  const rating = place.rating || 0;
+  const reviews = place.user_ratings_total || 0;
+  const stars = renderStars(rating);
+  const isOpen = place.opening_hours?.isOpen?.();
+  const openStatus = isOpen === true
+    ? '<span class="vendor-status-open">Open now</span>'
+    : isOpen === false
+    ? '<span class="vendor-status-closed">Closed</span>'
+    : '';
+  const photo = place.photos?.[0]
+    ? `<img src="${place.photos[0].getUrl({maxWidth:320,maxHeight:160})}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:4px" />`
+    : '';
+  return `<div class="vendor-card" id="vc-${place.place_id}">
+    ${photo}
+    <div class="vendor-name">${place.name}</div>
+    ${rating ? `<div class="vendor-stars">
+      <span class="stars">${stars}</span>
+      <span class="rating-num">${rating.toFixed(1)}</span>
+      <span class="rating-count">(${reviews.toLocaleString()} reviews)</span>
+    </div>` : ''}
+    <div class="vendor-address">📍 ${place.vicinity || place.formatted_address || ''}</div>
+    ${openStatus}
+    <div id="phone-${place.place_id}"></div>
+    <div class="vendor-actions">
+      <button class="btn btn-primary btn-sm" onclick="fetchPhone('${place.place_id}')">📞 Get Phone</button>
+      ${place.website ? `<a href="${place.website}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">🌐 Website</a>` : ''}
+    </div>
+  </div>`;
+}
+
+function fetchPhone(placeId) {
+  const btn = document.querySelector(`#vc-${placeId} .btn-primary`);
+  const phoneEl = document.getElementById('phone-' + placeId);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Loading…'; }
+
+  getPlacesService().getDetails(
+    { placeId, fields: ['formatted_phone_number', 'international_phone_number', 'website', 'url'] },
+    (detail, status) => {
+      if (btn) btn.remove();
+      if (status === google.maps.places.PlacesServiceStatus.OK && detail?.formatted_phone_number) {
+        const phone = detail.formatted_phone_number;
+        const intl  = detail.international_phone_number || phone;
+        const tel   = intl.replace(/\s+/g,'');
+        phoneEl.innerHTML = `<div class="vendor-phone">📞 <a href="tel:${tel}">${phone}</a></div>`;
+      } else {
+        phoneEl.innerHTML = `<div style="font-size:.8rem;color:var(--muted)">Phone not available</div>`;
+      }
+    }
+  );
+}
+
+function renderStars(rating) {
+  const full = Math.floor(rating);
+  const half = rating - full >= 0.5;
+  let s = '★'.repeat(full);
+  if (half) s += '½';
+  s += '☆'.repeat(5 - full - (half?1:0));
+  return s;
+}
+
+// Patch showPage to init vendor page
+const _origShowPage = showPage;
+showPage = function(id, navEl) {
+  _origShowPage(id, navEl);
+  if (id === 'vendors') initVendorPage();
+};
+</script>
+</body>
+</html>
