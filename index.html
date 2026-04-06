@@ -398,6 +398,71 @@
     }
     .logout-btn:hover { color: var(--red); }
 
+    /* ── Dark Theme ── */
+    [data-theme="dark"] {
+      --primary: #818cf8;
+      --primary-light: #1e1b4b;
+      --accent: #fb923c;
+      --accent-light: #431407;
+      --green: #4ade80;
+      --green-light: #052e16;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    [data-theme="dark"] #auth-screen {
+      background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 60%, #431407 100%);
+    }
+    [data-theme="dark"] .overlay { background: rgba(0,0,0,0.6); }
+
+    /* ── Theme Toggle ── */
+    .theme-toggle {
+      background: var(--primary-light); color: var(--primary);
+      border: none; border-radius: 8px; padding: 7px 12px;
+      cursor: pointer; font-size: 1rem; transition: all .15s; line-height: 1;
+    }
+    .theme-toggle:hover { background: var(--primary); color: #fff; }
+
+    /* ── Scrollable Events ── */
+    .scroll-events-wrap { position: relative; }
+    .scroll-arrows { display: flex; gap: 8px; margin-bottom: 10px; justify-content: flex-end; }
+    .scroll-arrow {
+      background: var(--primary-light); color: var(--primary);
+      border: none; border-radius: 8px; padding: 5px 14px;
+      cursor: pointer; font-size: 1rem; font-weight: 700; transition: all .15s;
+    }
+    .scroll-arrow:hover { background: var(--primary); color: #fff; }
+    .scroll-events-container {
+      display: flex; gap: 16px; overflow-x: auto;
+      padding-bottom: 10px; scroll-behavior: smooth;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .scroll-events-container::-webkit-scrollbar { height: 6px; }
+    .scroll-events-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .scroll-events-container .event-card { flex: 0 0 300px; min-width: 0; }
+
+    /* ── Icon Picker ── */
+    .icon-picker-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .icon-preview-row { display: flex; align-items: center; gap: 10px; }
+    .icon-preview {
+      width: 44px; height: 44px; border: 1.5px solid var(--border);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; background: var(--bg); flex-shrink: 0;
+    }
+    .icon-input { width: 72px; font-size: 1.3rem; text-align: center; padding: 6px 8px; }
+    .icon-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+    .icon-preset {
+      width: 34px; height: 34px; border: 1.5px solid var(--border);
+      border-radius: 6px; cursor: pointer; font-size: 1.2rem;
+      background: var(--bg); display: flex; align-items: center; justify-content: center;
+      transition: all .15s; padding: 0;
+    }
+    .icon-preset:hover { border-color: var(--primary); background: var(--primary-light); }
+    .icon-preset.selected { border-color: var(--primary); background: var(--primary-light); }
+
     /* ── Responsive ── */
     @media (max-width: 640px) {
       nav { display: none; }
@@ -465,6 +530,7 @@
     <span>Event Planner</span>
   </div>
   <div style="display:flex;align-items:center;gap:12px">
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark/light mode">🌙</button>
     <div class="user-pill" id="user-pill" style="display:none">
       <div class="user-avatar" id="user-avatar"></div>
       <span id="user-display"></span>
@@ -519,10 +585,16 @@
 
       <div class="stats-row" id="stats-row"></div>
 
-      <div class="page-header" style="margin-bottom:16px">
+      <div class="page-header" style="margin-bottom:8px">
         <div class="page-title" style="font-size:1.1rem">Upcoming Events</div>
       </div>
-      <div class="events-grid" id="upcoming-grid"></div>
+      <div class="scroll-events-wrap">
+        <div class="scroll-arrows">
+          <button class="scroll-arrow" onclick="scrollEvents(-1)">&#8592;</button>
+          <button class="scroll-arrow" onclick="scrollEvents(1)">&#8594;</button>
+        </div>
+        <div class="scroll-events-container" id="upcoming-grid"></div>
+      </div>
     </div>
 
     <!-- All Events -->
@@ -653,7 +725,7 @@
         </div>
         <div class="form-group">
           <label for="ev-category">Category *</label>
-          <select id="ev-category">
+          <select id="ev-category" onchange="updateIconPreview()">
             <option value="birthday">Birthday Party</option>
             <option value="wedding">Wedding</option>
             <option value="party">Party / Celebration</option>
@@ -681,6 +753,40 @@
       <div class="form-group">
         <label for="ev-location">Location</label>
         <input id="ev-location" type="text" placeholder="e.g. Community Park, 123 Main St" />
+      </div>
+
+      <!-- Icon Picker -->
+      <div class="form-group">
+        <label>Custom Icon <span style="font-size:.75rem;color:var(--muted);font-weight:400">— overrides category icon</span></label>
+        <div class="icon-picker-wrap">
+          <div class="icon-preview-row">
+            <div class="icon-preview" id="icon-preview">🎉</div>
+            <input class="icon-input" id="ev-icon" type="text" placeholder="🎉" maxlength="4" oninput="updateIconPreview()" />
+            <span style="font-size:.8rem;color:var(--muted)">Type any emoji</span>
+          </div>
+          <div class="icon-presets">
+            <button type="button" class="icon-preset" onclick="setIcon('🎉',this)">🎉</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🎂',this)">🎂</button>
+            <button type="button" class="icon-preset" onclick="setIcon('💍',this)">💍</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🥳',this)">🥳</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🎵',this)">🎵</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🍽️',this)">🍽️</button>
+            <button type="button" class="icon-preset" onclick="setIcon('📸',this)">📸</button>
+            <button type="button" class="icon-preset" onclick="setIcon('💐',this)">💐</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🏆',this)">🏆</button>
+            <button type="button" class="icon-preset" onclick="setIcon('❤️',this)">❤️</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🌟',this)">🌟</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🎭',this)">🎭</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🏖️',this)">🏖️</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🎬',this)">🎬</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🏛️',this)">🏛️</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🪄',this)">🪄</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🎠',this)">🎠</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🎊',this)">🎊</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🌈',this)">🌈</button>
+            <button type="button" class="icon-preset" onclick="setIcon('🦋',this)">🦋</button>
+          </div>
+        </div>
       </div>
 
       <!-- Guests -->
@@ -787,6 +893,8 @@ function openModal(id) {
   document.getElementById('ev-time').value = '';
   document.getElementById('ev-location').value = '';
   document.getElementById('ev-notes').value = '';
+  document.getElementById('ev-icon').value = '';
+  updateIconPreview();
   if (id) {
     const ev = events.find(e => e.id === id);
     if (ev) {
@@ -798,11 +906,13 @@ function openModal(id) {
       document.getElementById('ev-time').value = ev.time || '';
       document.getElementById('ev-location').value = ev.location || '';
       document.getElementById('ev-notes').value = ev.notes || '';
+      document.getElementById('ev-icon').value = ev.icon || '';
       editingGuests = [...(ev.guests || [])];
       editingTasks  = (ev.tasks || []).map(t => ({...t}));
       editingBudget = (ev.budget || []).map(b => ({...b}));
     }
   }
+  updateIconPreview();
   renderGuestTags();
   renderTaskList();
   renderBudgetItems();
@@ -893,6 +1003,7 @@ function saveEvent() {
     time: document.getElementById('ev-time').value,
     location: document.getElementById('ev-location').value.trim(),
     notes: document.getElementById('ev-notes').value.trim(),
+    icon: document.getElementById('ev-icon').value.trim(),
     guests: [...editingGuests],
     tasks: editingTasks.map(t => ({...t})),
     budget: editingBudget.map(b => ({...b})),
@@ -925,6 +1036,7 @@ function openDetail(id) {
   const ev = events.find(e => e.id === id);
   if (!ev) return;
   const cat = CATEGORIES[ev.category] || CATEGORIES.other;
+  const icon = ev.icon || cat.emoji;
   const doneCount = (ev.tasks||[]).filter(t=>t.done).length;
   const totalTasks = (ev.tasks||[]).length;
   const pct = totalTasks ? Math.round(doneCount/totalTasks*100) : 0;
@@ -934,7 +1046,7 @@ function openDetail(id) {
     <div class="detail-header">
       <div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
-          <span class="event-badge ${cat.badge}">${cat.emoji} ${cat.label}</span>
+          <span class="event-badge ${cat.badge}">${icon} ${cat.label}</span>
         </div>
         <div class="detail-title">${ev.name}</div>
       </div>
@@ -1016,8 +1128,7 @@ function renderDashboard() {
   const today = new Date(); today.setHours(0,0,0,0);
   const upcoming = events
     .filter(e => new Date(e.date + 'T00:00:00') >= today)
-    .sort((a,b) => a.date.localeCompare(b.date))
-    .slice(0, 6);
+    .sort((a,b) => a.date.localeCompare(b.date));
   const thisMonth = events.filter(e => {
     const d = new Date(e.date+'T00:00:00');
     return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
@@ -1071,6 +1182,7 @@ function renderEvents() {
 
 function eventCard(ev) {
   const cat = CATEGORIES[ev.category] || CATEGORIES.other;
+  const icon = ev.icon || cat.emoji;
   const doneCount = (ev.tasks||[]).filter(t=>t.done).length;
   const totalTasks = (ev.tasks||[]).length;
   const pct = totalTasks ? Math.round(doneCount/totalTasks*100) : -1;
@@ -1085,7 +1197,7 @@ function eventCard(ev) {
     <div class="category-stripe ${cat.stripe}"></div>
     <div class="event-card-top">
       <div class="event-card-title">${ev.name}</div>
-      <span class="event-badge ${cat.badge}">${cat.emoji} ${cat.label}</span>
+      <span class="event-badge ${cat.badge}">${icon} ${cat.label}</span>
     </div>
     <div class="event-meta">
       <div class="event-meta-row"><span class="icon">📅</span>${formatDate(ev.date)} &nbsp;•&nbsp; ${daysLabel}</div>
@@ -1249,6 +1361,7 @@ initCal();
 renderDashboard();
 renderCalendar();
 checkSession();
+initTheme();
 
 // ── Vendor Finder ─────────────────────────────────────────────────────
 let googleApiKey = localStorage.getItem('fep_maps_key') || '';
@@ -1406,6 +1519,44 @@ function renderStars(rating) {
   if (half) s += '½';
   s += '☆'.repeat(5 - full - (half?1:0));
   return s;
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('fep_theme', next);
+  document.getElementById('theme-toggle-btn').textContent = next === 'dark' ? '☀️' : '🌙';
+}
+function initTheme() {
+  const saved = localStorage.getItem('fep_theme') || 'light';
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.getElementById('theme-toggle-btn').textContent = '☀️';
+  }
+}
+
+// ── Scroll Events ─────────────────────────────────────────────────────
+function scrollEvents(dir) {
+  const c = document.getElementById('upcoming-grid');
+  c.scrollBy({ left: dir * 330, behavior: 'smooth' });
+}
+
+// ── Icon Picker ───────────────────────────────────────────────────────
+function setIcon(emoji, btn) {
+  document.getElementById('ev-icon').value = emoji;
+  document.getElementById('icon-preview').textContent = emoji;
+  document.querySelectorAll('.icon-preset').forEach(b => b.classList.remove('selected'));
+  if (btn) btn.classList.add('selected');
+}
+function updateIconPreview() {
+  const val = document.getElementById('ev-icon').value;
+  const cat = document.getElementById('ev-category')?.value || 'other';
+  document.getElementById('icon-preview').textContent = val || (CATEGORIES[cat] || CATEGORIES.other).emoji;
+  document.querySelectorAll('.icon-preset').forEach(b => {
+    b.classList.toggle('selected', b.textContent === val);
+  });
 }
 
 // Patch showPage to init vendor page
