@@ -149,10 +149,17 @@ function showSection(id, btn) {
     if (id === 'analytics') updateAnalytics();
 }
 
+function closeAuth() {
+    document.getElementById('auth-screen').classList.remove('visible');
+    document.getElementById('auth-screen').classList.add('hidden');
+    showToast("Welcome back, Felix!");
+}
+
 function toggleTheme() {
-    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('fep_theme', theme);
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('fep_theme', next);
 }
 
 function initTheme() {
