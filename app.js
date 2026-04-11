@@ -149,6 +149,17 @@ function showSection(id, btn) {
     if (id === 'analytics') updateAnalytics();
 }
 
+function toggleTheme() {
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('fep_theme', theme);
+}
+
+function initTheme() {
+    const saved = localStorage.getItem('fep_theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+}
+
 // Guest & Allergy Logic
 function addGuest() {
     const name = document.getElementById('guest-name').value;
@@ -165,13 +176,18 @@ function addGuest() {
 function renderGuests() {
     const tbody = document.getElementById('guest-body');
     tbody.innerHTML = state.guests.map((g, i) => `
-        <tr>
-            <td>${g.name}</td>
-            <td>${g.rsvp}</td>
-            <td>${g.allergy || 'None'}</td>
-            <td><button onclick="state.guests.splice(${i},1);renderGuests()">Delete</button></td>
+        <tr style="border-bottom: 1px solid var(--border);">
+            <td style="padding:12px;"><strong>${g.name}</strong></td>
+            <td><select onchange="updateRSVP(${i}, this.value)">
+                <option value="Pending" ${g.rsvp === 'Pending' ? 'selected' : ''}>Pending</option>
+                <option value="Confirmed" ${g.rsvp === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+                <option value="Declined" ${g.rsvp === 'Declined' ? 'selected' : ''}>Declined</option>
+            </select></td>
+            <td style="color:var(--muted);">${g.allergy || 'No allergies'}</td>
+            <td><button class="btn-danger btn-sm" onclick="state.guests.splice(${i},1);renderGuests()">Remove</button></td>
         </tr>
     `).join('');
+    updateRSVPCounts();
 }
 
 // Budget Logic
