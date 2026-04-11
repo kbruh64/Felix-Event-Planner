@@ -123,9 +123,13 @@ function renderCategories() {
     `).join('');
 }
 
-function selectCategory(name) {
+function selectCategory(name, el) {
     const checklistItems = document.getElementById('checklist-items');
     const templateSection = document.getElementById('template-section');
+    
+    // Visual feedback
+    document.querySelectorAll('.cat-badge').forEach(b => b.style.outline = 'none');
+    if (event && event.currentTarget) event.currentTarget.style.outline = '3px solid var(--primary)';
     
     const tasks = templates[name] || [];
     checklistItems.innerHTML = tasks.map(task => `<li><input type="checkbox"> ${task}</li>`).join('');
@@ -133,10 +137,14 @@ function selectCategory(name) {
     showToast(`Loaded ${name} checklist`);
 }
 
-function showSection(id) {
+function showSection(id, btn) {
     ['dashboard', 'guests', 'budget', 'analytics'].forEach(s => {
         document.getElementById(`${s}-section`).classList.add('hidden');
     });
+    
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
     document.getElementById(`${id}-section`).classList.remove('hidden');
     if (id === 'analytics') updateAnalytics();
 }

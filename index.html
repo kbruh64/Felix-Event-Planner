@@ -9,40 +9,45 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">Felix Planner</div>
-        <div class="nav-links">
-            <button onclick="showSection('dashboard')">Dashboard</button>
-            <button onclick="showSection('guests')">Guests</button>
-            <button onclick="showSection('budget')">Budget</button>
-            <button onclick="showSection('analytics')">Analytics</button>
-            <button class="btn-print" onclick="window.print()">Print Plan</button>
-            <button class="btn-share" onclick="copyEventLink()">Share Event</button>
+        <div class="nav-container">
+            <div class="logo">Felix<span>Planner</span></div>
+            <div class="nav-links">
+                <button class="nav-btn active" onclick="showSection('dashboard', this)">Dashboard</button>
+                <button class="nav-btn" onclick="showSection('guests', this)">Guests</button>
+                <button class="nav-btn" onclick="showSection('budget', this)">Budget</button>
+                <button class="nav-btn" onclick="showSection('analytics', this)">Analytics</button>
+            </div>
+            <div class="nav-actions">
+                <button class="btn-icon" onclick="window.print()" title="Print Plan">🖨️</button>
+                <button class="btn-share" onclick="copyEventLink()">Share Link</button>
+            </div>
         </div>
     </nav>
 
-    <main id="app">
+    <main id="app" class="container">
         <!-- Onboarding Modal -->
         <div id="onboarding-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>Welcome to Felix Planner</h2>
-                <p>Help us customize your planning experience.</p>
+                <h2>Welcome to Felix</h2>
+                <p class="subtitle">Let's tailor your event planning experience.</p>
                 <div class="survey-form">
-                    <label>Who are you planning for?</label>
-                    <select id="user-type">
-                        <option value="Grade 6 Student">Grade 6 Student</option>
-                        <option value="Parent">Parent of young kids</option>
-                        <option value="Professional">Professional Planner</option>
-                        <option value="Teacher">Teacher</option>
-                    </select>
-
-                    <label>What do you care about most?</label>
-                    <input type="text" id="user-goal" placeholder="e.g., Getting organized in one place">
-
-                    <label>What do you dislike about planning?</label>
-                    <input type="text" id="user-dislike" placeholder="e.g., Forgetting who is coming">
-
-                    <label>When do you usually start planning?</label>
-                    <input type="text" id="user-timeline" placeholder="e.g., 2-3 weeks before">
+                    <div class="input-group">
+                        <label>Role</label>
+                        <select id="user-type">
+                            <option value="Grade 6 Student">Grade 6 Student</option>
+                            <option value="Parent">Parent</option>
+                            <option value="Professional">Professional Planner</option>
+                            <option value="Teacher">Teacher</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Main Goal</label>
+                        <input type="text" id="user-goal" placeholder="e.g., Stay organized">
+                    </div>
+                    <div class="input-group">
+                        <label>Biggest Worry</label>
+                        <input type="text" id="user-dislike" placeholder="e.g., Forgetting guests">
+                    </div>
 
                     <button class="btn-primary" onclick="finishOnboarding()">Start Planning</button>
                 </div>
@@ -53,16 +58,17 @@
         <div id="tutorial-overlay" class="tutorial-overlay hidden" onclick="nextTutorialStep()">
             <div id="tutorial-box" class="tutorial-box">
                 <p id="tutorial-text"></p>
-                <button class="btn-primary">Next</button>
+                <button class="btn-primary">Got it</button>
             </div>
         </div>
 
         <!-- Dashboard Section -->
         <section id="dashboard-section">
-            <div class="countdown-card">
-                <h3>Days Until Event</h3>
-                <div id="countdown-timer">00:00:00</div>
-            </div>
+            <header class="section-header">
+                <h1>Event Dashboard</h1>
+                <div class="countdown-mini" id="countdown-timer">00d 00h left</div>
+            </header>
+
             <div class="dashboard-grid">
                 <div id="profile-card" class="card">
                     <h3>Planning Persona</h3>
