@@ -1,0 +1,206 @@
+:root {
+    --primary: #2563eb;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --danger: #ef4444;
+    --success: #22c55e;
+    /* Category Colors */
+    --cat-wedding: #db2777; --cat-corporate: #1e40af; --cat-birthday: #f59e0b;
+    --cat-workshop: #10b981; --cat-concert: #7c3aed; --cat-dinner: #ea580c;
+    --cat-picnic: #06b6d4; --cat-holiday: #dc2626;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: var(--card);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.hidden { display: none !important; }
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.survey-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    text-align: left;
+}
+
+.survey-form label { font-weight: 600; font-size: 0.9rem; }
+.survey-form input, .survey-form select {
+    padding: 0.5rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+.card {
+    background: var(--card);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    padding: 0 2rem;
+}
+
+.countdown-card {
+    background: var(--primary);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    margin: 2rem;
+}
+
+#countdown-timer { font-size: 2.5rem; font-weight: 700; }
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.cat-badge {
+    padding: 1rem;
+    border-radius: 8px;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.cat-badge:hover { transform: scale(1.05); }
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Tutorial Styles */
+.tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tutorial-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 0 20px var(--primary);
+}
+
+.tutorial-highlight {
+    position: relative;
+    z-index: 201;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.7), 0 0 15px white !important;
+    pointer-events: none;
+}
+
+.allergy-list {
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #fff1f2;
+    border-radius: 8px;
+}
+
+.warning {
+    background: #fee2e2;
+    color: var(--danger);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    font-weight: 600;
+}
+
+/* Toast Styles */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.toast {
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    margin-top: 10px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+/* Simple Analytics Bars */
+.simple-bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 1rem;
+}
+
+.bar {
+    height: 24px;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
