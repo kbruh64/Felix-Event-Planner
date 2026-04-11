@@ -2,19 +2,19 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --primary: #5b6af0;
-  --primary-light: #eef0fe;
-  --accent: #f97316;
-  --accent-light: #fff4ed;
+  --primary: #6c5ce7;
+  --primary-light: #f1f0ff;
+  --accent: #fd9644;
+  --accent-light: #fff5eb;
   --green: #22c55e;
   --green-light: #f0fdf4;
   --red: #ef4444;
-  --bg: #f8f9ff;
+  --bg: #fffaf0;
   --surface: #ffffff;
-  --border: #e4e7f0;
-  --text: #1e2235;
-  --muted: #6b7280;
-  --radius: 12px;
+  --border: #ffeaa7;
+  --text: #2d3436;
+  --muted: #a4b0be;
+  --radius: 24px;
   --shadow: 0 2px 12px rgba(91,106,240,0.08);
 }
 
@@ -36,7 +36,7 @@ body {
 
 /* ── Layout & Header ── */
 header {
-  background: var(--surface);
+  background: #ffffff;
   border-bottom: 1px solid var(--border);
   padding: 0 24px;
   display: flex; align-items: center; justify-content: space-between;
@@ -81,8 +81,13 @@ main { flex: 1; padding: 28px; overflow-y: auto; }
 .btn-secondary { background: var(--primary-light); color: var(--primary); }
 
 .cat-badge {
-  padding: 12px; border-radius: 10px; color: white; text-align: center;
-  cursor: pointer; font-weight: 600; font-size: 0.85rem;
+  padding: 20px 10px; border-radius: 20px; color: white; text-align: center;
+  cursor: pointer; font-weight: 700; font-size: 0.9rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.cat-badge:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
 }
 
 /* ── Overlays (Modal & Auth) ── */

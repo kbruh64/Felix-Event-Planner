@@ -14,35 +14,35 @@ let state = {
 };
 
 const categories = [
-    { name: 'Wedding', color: 'var(--cat-wedding)' },
-    { name: 'Corporate', color: 'var(--cat-corporate)' },
-    { name: 'Birthday', color: 'var(--cat-birthday)' },
-    { name: 'Graduation', color: '#6366f1' },
-    { name: 'Anniversary', color: '#ec4899' },
-    { name: 'Game Night', color: '#8b5cf6' },
-    { name: 'Workshop', color: 'var(--cat-workshop)' },
-    { name: 'Concert', color: 'var(--cat-concert)' },
-    { name: 'Dinner', color: 'var(--cat-dinner)' },
-    { name: 'Picnic', color: 'var(--cat-picnic)' },
-    { name: 'Holiday', color: 'var(--cat-holiday)' }
+    { name: 'Birthday 🎉', color: '#ff9ff3' },
+    { name: 'Playdate 🎈', color: '#feca57' },
+    { name: 'School Event 🏫', color: '#48dbfb' },
+    { name: 'Bake Sale 🍪', color: '#ff9f43' },
+    { name: 'Family Dinner 🧺', color: '#1dd1a1' },
+    { name: 'Sleepover 🌙', color: '#5f27cd' },
+    { name: 'Sports Day ⚽', color: '#ee5253' },
+    { name: 'Holiday Party 🎄', color: '#0abde3' },
+    { name: 'Picnic 🍉', color: '#10ac84' },
+    { name: 'Graduation 🎓', color: '#54a0ff' },
+    { name: 'Anniversary 💖', color: '#f368e0' }
 ];
 
 const templates = {
-    'Wedding': ['Book Venue', 'Send Invitations', 'Choose Catering', 'Dress Fitting'],
-    'Birthday': ['Buy Cake', 'Decorate Room', 'Prepare Games', 'Party Bags'],
-    'Corporate': ['Rent AV Equipment', 'Confirm Speakers', 'Print Badges', 'Book Catering'],
-    'Graduation': ['Order Gown', 'Invitations', 'Venue Booking', 'Photo Slideshow'],
-    'Anniversary': ['Reservation', 'Gift Selection', 'Flower Order'],
-    'Game Night': ['Select Games', 'Snack Prep', 'Scoreboard Setup'],
-    'Workshop': ['Create Handouts', 'Set Up Projector', 'Email Reminders'],
-    'Concert': ['Sound Check', 'Ticket Sales', 'Security Plan'],
-    'Dinner': ['Menu Planning', 'Grocery Shopping', 'Set Table'],
-    'Picnic': ['Pack Blanket', 'Prepare Sandwiches', 'Check Weather'],
-    'Holiday': ['Buy Decorations', 'Plan Activities', 'Secret Santa']
+    'Birthday 🎉': ['Order Cake', 'Buy Goodie Bags', 'Send Paperless Post', 'Confirm RSVP Count'],
+    'Playdate 🎈': ['Snack Prep', 'Safety Check Toys', 'Message Parents', 'Set End Time'],
+    'School Event 🏫': ['Volunteer Signup', 'Permission Slips', 'Room Parent Sync', 'Decorations'],
+    'Bake Sale 🍪': ['Ingredient Check', 'Packaging Labels', 'Cash Box', 'Folding Table'],
+    'Family Dinner 🧺': ['Grocery List', 'Check Allergies', 'Set Playlist', 'Activity for Kids'],
+    'Sleepover 🌙': ['Extra Pillows', 'Movie Selection', 'Breakfast Prep', 'Emergency Contact List'],
+    'Sports Day ⚽': ['Water Bottles', 'Orange Slices', 'Team Jersey Check', 'First Aid Kit'],
+    'Holiday Party 🎄': ['Theme Decorations', 'Gift Exchange Rules', 'Holiday Treats', 'Playlist'],
+    'Picnic 🍉': ['Cooler Pack', 'Outdoor Blankets', 'Sunscreen', 'Bug Spray'],
+    'Graduation 🎓': ['Cap and Gown', 'Invitations', 'Venue Booking', 'Photo Slideshow'],
+    'Anniversary 💖': ['Reservation', 'Gift Selection', 'Flower Order']
 };
 
 const tutorialSteps = [
-    { text: "Welcome! This is your Dashboard. Check your countdown here.", element: "dashboard-section" },
+    { text: "Hi! This is your home base for planning amazing events.", element: "dashboard-section" },
     { text: "Select a Category to get a custom checklist for your event.", element: "category-selector" },
     { text: "Manage your guests and track allergies here.", element: "guests-section" },
     { text: "Keep your budget in check to avoid overspending.", element: "budget-section" },
@@ -76,7 +76,7 @@ function finishOnboarding() {
     document.getElementById('onboarding-modal').classList.add('hidden');
     renderProfile();
     startTutorial();
-    showToast(`Setup complete for ${state.persona.type} mode!`);
+    showToast(`Ready to go, ${state.persona.type}!`);
 }
 
 function startTutorial() {
@@ -108,17 +108,18 @@ function nextTutorialStep() {
 function renderProfile() {
     const profile = JSON.parse(localStorage.getItem('userPersona')) || state.persona;
     document.getElementById('profile-content').innerHTML = `
-        <p><strong>Goal:</strong> ${profile.goal || 'Stay organized'}</p>
-        <p><strong>Avoid:</strong> ${profile.dislike || 'Clutter'}</p>
-        <p><strong>Timeline:</strong> ${profile.timeline || 'TBD'}</p>
+        <p>✨ <strong>Goal:</strong> ${profile.goal || 'Stay organized'}</p>
+        <p>🚫 <strong>Dislike:</strong> ${profile.dislike || 'Clutter'}</p>
+        <p>📅 <strong>Timeline:</strong> ${profile.timeline || 'TBD'}</p>
     `;
 }
 
 function renderCategories() {
     const container = document.getElementById('category-selector');
     container.innerHTML = categories.map(cat => `
-        <div class="cat-badge" style="background: ${cat.color}" onclick="selectCategory('${cat.name}')">
-            ${cat.name}
+        <div class="cat-badge" style="background: ${cat.color}; box-shadow: 0 4px 0 rgba(0,0,0,0.1);" onclick="selectCategory('${cat.name}')">
+            <span style="font-size: 1.2rem; display: block;">${cat.name.split(' ')[1]}</span>
+            ${cat.name.split(' ')[0]}
         </div>
     `).join('');
 }

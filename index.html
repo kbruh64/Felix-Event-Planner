@@ -28,31 +28,31 @@
     </div>
 
     <header>
-        <div class="logo"><span class="logo-icon">🎉</span> Felix Planner</div>
+        <div class="logo"><span class="logo-icon">🎈</span> Felix <span style="color: var(--accent)">Planner</span></div>
         <div style="display:flex; align-items:center; gap:12px">
             <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
-            <button class="btn btn-secondary" onclick="copyEventLink()">Share</button>
-            <button class="btn btn-primary" onclick="window.print()">Print</button>
+            <button class="btn btn-secondary" onclick="copyEventLink()">🔗 Share</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print</button>
         </div>
     </header>
 
     <div class="layout">
         <nav>
-            <div class="nav-item active" onclick="showSection('dashboard', this)">🏠 Dashboard</div>
-            <div class="nav-item" onclick="showSection('guests', this)">👥 Guest List</div>
-            <div class="nav-item" onclick="showSection('budget', this)">💰 Budget</div>
-            <div class="nav-item" onclick="showSection('analytics', this)">📈 Analytics</div>
+            <div class="nav-item active" onclick="showSection('dashboard', this)">🏠 Home</div>
+            <div class="nav-item" onclick="showSection('guests', this)">🐥 Guests</div>
+            <div class="nav-item" onclick="showSection('budget', this)">💰 Piggy Bank</div>
+            <div class="nav-item" onclick="showSection('analytics', this)">📊 Progress</div>
         </nav>
 
         <main id="app">
         <!-- Onboarding Modal -->
         <div id="onboarding-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>Welcome to Felix</h2>
-                <p class="subtitle">Let's tailor your event planning experience.</p>
+                <h2 style="color: var(--primary)">Hi there! 👋</h2>
+                <p class="subtitle">Let's make planning your next event a breeze.</p>
                 <div class="survey-form">
                     <div class="input-group">
-                        <label>Role</label>
+                        <label>I am a...</label>
                         <select id="user-type">
                             <option value="Grade 6 Student">Grade 6 Student</option>
                             <option value="Parent">Parent</option>
@@ -61,15 +61,15 @@
                         </select>
                     </div>
                     <div class="input-group">
-                        <label>Main Goal</label>
-                        <input type="text" id="user-goal" placeholder="e.g., Stay organized">
+                        <label>My main goal is...</label>
+                        <input type="text" id="user-goal" placeholder="e.g., Happy kids, no stress!">
                     </div>
                     <div class="input-group">
-                        <label>Biggest Worry</label>
-                        <input type="text" id="user-dislike" placeholder="e.g., Forgetting guests">
+                        <label>My biggest planning headache is...</label>
+                        <input type="text" id="user-dislike" placeholder="e.g., Forgetting the snacks">
                     </div>
 
-                    <button class="btn-primary" onclick="finishOnboarding()">Start Planning</button>
+                    <button class="btn-primary" onclick="finishOnboarding()">Let's Go!</button>
                 </div>
             </div>
         </div>
@@ -85,13 +85,13 @@
         <!-- Dashboard Section -->
         <section id="dashboard-section">
             <div class="page-header">
-                <div class="page-title">Event Dashboard</div>
-                <div class="page-subtitle" id="countdown-timer">00d 00h left</div>
+                <div class="page-title">Ready for Fun?</div>
+                <div class="page-subtitle" id="countdown-timer" style="background: var(--accent-light); padding: 5px 12px; border-radius: 20px; color: var(--accent)">00d 00h left</div>
             </div>
 
             <div class="stats-row">
                 <div class="stat-card blue">
-                    <div class="stat-label">Planning Profile</div>
+                    <div class="stat-label">My Planning Style</div>
                     <div id="profile-content" style="font-size: 0.9rem; margin-top: 5px;"></div>
                     <button class="btn btn-sm btn-secondary" onclick="startTutorial()" style="margin-top:10px">Help</button>
                 </div>
@@ -101,7 +101,7 @@
                 </div>
             </div>
 
-            <h3>Event Category</h3>
+            <h3 style="margin-bottom: 10px;">What are we celebrating?</h3>
             <div class="category-grid" id="category-selector" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin: 15px 0;">
                 <!-- Categories here -->
             </div>
