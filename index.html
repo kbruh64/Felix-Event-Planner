@@ -16,14 +16,24 @@
                 <span class="auth-logo-text">Felix Planner</span>
             </div>
             <div class="auth-tabs">
-                <div class="auth-tab active">Sign In</div>
-                <div class="auth-tab">Sign Up</div>
+                <div class="auth-tab active" onclick="switchAuthTab('signin')">Sign In</div>
+                <div class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</div>
             </div>
-            <div class="auth-form">
-                <input type="email" id="auth-email" placeholder="Email Address">
-                <input type="password" id="auth-password" placeholder="Password">
-                <div id="auth-error" style="color:red;font-size:0.85rem;display:none;">Incorrect email or password.</div>
+            <!-- Sign In Form -->
+            <div id="signin-form" class="auth-form">
+                <input type="email" id="signin-email" placeholder="Email Address">
+                <input type="password" id="signin-password" placeholder="Password">
+                <div id="signin-error" style="color:red;font-size:0.85rem;display:none;"></div>
                 <button class="auth-submit" onclick="handleSignIn()">Sign In</button>
+            </div>
+            <!-- Sign Up Form -->
+            <div id="signup-form" class="auth-form" style="display:none;">
+                <input type="text" id="signup-name" placeholder="Your Name">
+                <input type="email" id="signup-email" placeholder="Email Address">
+                <input type="password" id="signup-password" placeholder="Password">
+                <input type="password" id="signup-confirm" placeholder="Confirm Password">
+                <div id="signup-error" style="color:red;font-size:0.85rem;display:none;"></div>
+                <button class="auth-submit" onclick="handleSignUp()">Create Account</button>
             </div>
         </div>
     </div>

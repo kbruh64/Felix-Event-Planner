@@ -51,13 +51,16 @@ const tutorialSteps = [
 
 // Initialize App
 window.onload = () => {
-    renderProfile();
-    if (!localStorage.getItem('tutorialDone')) startTutorial();
     renderCategories();
     updateCountdown();
     requestNotificationPermission();
     setInterval(updateCountdown, 1000);
 };
+
+function initAfterAuth() {
+    renderProfile();
+    if (!localStorage.getItem('tutorialDone')) startTutorial();
+}
 
 function startTutorial() {
     state.tutorialStep = 0;
@@ -146,21 +149,71 @@ function openModal() {
     showToast("Opening Event Creator...");
 }
 
-const ACCOUNT_EMAIL = 'bookfred@hotmail.ca';
-const ACCOUNT_PASSWORD = 'felix2025';
+function getAccounts() {
+    return JSON.parse(localStorage.getItem('fep_accounts') || '{}');
+}
+
+function saveAccounts(accounts) {
+    localStorage.setItem('fep_accounts', JSON.stringify(accounts));
+}
+
+function switchAuthTab(tab) {
+    const tabs = document.querySelectorAll('.auth-tab');
+    tabs[0].classList.toggle('active', tab === 'signin');
+    tabs[1].classList.toggle('active', tab === 'signup');
+    document.getElementById('signin-form').style.display = tab === 'signin' ? '' : 'none';
+    document.getElementById('signup-form').style.display = tab === 'signup' ? '' : 'none';
+}
+
+function authSuccess(name) {
+    document.getElementById('auth-screen').classList.remove('visible');
+    document.getElementById('auth-screen').classList.add('hidden');
+    showToast(`Welcome, ${name}!`);
+    initAfterAuth();
+}
 
 function handleSignIn() {
-    const email = document.getElementById('auth-email').value.trim();
-    const password = document.getElementById('auth-password').value;
-    const errEl = document.getElementById('auth-error');
-    if (email === ACCOUNT_EMAIL && password === ACCOUNT_PASSWORD) {
+    const email = document.getElementById('signin-email').value.trim().toLowerCase();
+    const password = document.getElementById('signin-password').value;
+    const errEl = document.getElementById('signin-error');
+    const accounts = getAccounts();
+    if (accounts[email] && accounts[email].password === password) {
         errEl.style.display = 'none';
-        document.getElementById('auth-screen').classList.remove('visible');
-        document.getElementById('auth-screen').classList.add('hidden');
-        showToast("Welcome back, Felix!");
+        localStorage.setItem('fep_current_user', email);
+        authSuccess(accounts[email].name);
     } else {
+        errEl.textContent = 'Incorrect email or password.';
         errEl.style.display = 'block';
     }
+}
+
+function handleSignUp() {
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim().toLowerCase();
+    const password = document.getElementById('signup-password').value;
+    const confirm = document.getElementById('signup-confirm').value;
+    const errEl = document.getElementById('signup-error');
+    if (!name || !email || !password) {
+        errEl.textContent = 'Please fill in all fields.';
+        errEl.style.display = 'block';
+        return;
+    }
+    if (password !== confirm) {
+        errEl.textContent = 'Passwords do not match.';
+        errEl.style.display = 'block';
+        return;
+    }
+    const accounts = getAccounts();
+    if (accounts[email]) {
+        errEl.textContent = 'An account with that email already exists.';
+        errEl.style.display = 'block';
+        return;
+    }
+    accounts[email] = { name, password };
+    saveAccounts(accounts);
+    localStorage.setItem('fep_current_user', email);
+    errEl.style.display = 'none';
+    authSuccess(name);
 }
 
 function toggleTheme() {
