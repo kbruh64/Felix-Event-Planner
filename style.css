@@ -103,6 +103,28 @@ main { flex: 1; padding: 28px; overflow-y: auto; }
   text-align: center;
 }
 .auth-logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 20px; }
+.auth-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+.auth-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
 .auth-form input {
   width: 100%; padding: 12px; margin-bottom: 12px; border: 1.5px solid var(--border); border-radius: 8px;
 }
