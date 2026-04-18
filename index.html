@@ -20,9 +20,10 @@
                 <div class="auth-tab">Sign Up</div>
             </div>
             <div class="auth-form">
-                <input type="email" placeholder="Email Address">
-                <input type="password" placeholder="Password">
-                <button class="auth-submit" onclick="closeAuth()">Sign In</button>
+                <input type="email" id="auth-email" placeholder="Email Address">
+                <input type="password" id="auth-password" placeholder="Password">
+                <div id="auth-error" style="color:red;font-size:0.85rem;display:none;">Incorrect email or password.</div>
+                <button class="auth-submit" onclick="handleSignIn()">Sign In</button>
             </div>
         </div>
     </div>
@@ -51,36 +52,7 @@
         </nav>
 
         <main id="app">
-        <!-- Onboarding Modal -->
-        <div id="onboarding-modal" class="modal hidden">
-            <div class="modal-content">
-                <h2 style="color: var(--primary)">Hi there! 👋</h2>
-                <p class="subtitle">Let's make planning your next event a breeze.</p>
-                <div class="survey-form">
-                    <div class="input-group">
-                        <label>I am a...</label>
-                        <select id="user-type">
-                            <option value="Grade 6 Student">Grade 6 Student</option>
-                            <option value="Parent">Parent</option>
-                            <option value="Professional">Professional Planner</option>
-                            <option value="Teacher">Teacher</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>My main goal is...</label>
-                        <input type="text" id="user-goal" placeholder="e.g., Happy kids, no stress!">
-                    </div>
-                    <div class="input-group">
-                        <label>My biggest planning headache is...</label>
-                        <input type="text" id="user-dislike" placeholder="e.g., Forgetting the snacks">
-                    </div>
-
-                    <button class="btn-primary" onclick="finishOnboarding()">Let's Go!</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tutorial Overlay -->
+<!-- Tutorial Overlay -->
         <div id="tutorial-overlay" class="tutorial-overlay hidden" onclick="nextTutorialStep()">
             <div id="tutorial-box" class="tutorial-box">
                 <p id="tutorial-text"></p>
@@ -91,8 +63,7 @@
         <!-- Dashboard Section -->
         <section id="dashboard-section">
             <div class="page-header">
-                <div class="page-title">Ready for Fun?</div>
-                <div class="page-subtitle" id="countdown-timer" style="background: var(--accent-light); padding: 5px 12px; border-radius: 20px; color: var(--accent)">00d 00h left</div>
+<div class="page-subtitle" id="countdown-timer" style="background: var(--accent-light); padding: 5px 12px; border-radius: 20px; color: var(--accent)">00d 00h left</div>
             </div>
 
             <div class="stats-row">

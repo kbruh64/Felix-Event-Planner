@@ -51,33 +51,13 @@ const tutorialSteps = [
 
 // Initialize App
 window.onload = () => {
-    if (!localStorage.getItem('onboarded')) {
-        document.getElementById('onboarding-modal').classList.remove('hidden');
-    } else {
-        renderProfile();
-        if (!localStorage.getItem('tutorialDone')) startTutorial();
-    }
+    renderProfile();
+    if (!localStorage.getItem('tutorialDone')) startTutorial();
     renderCategories();
     updateCountdown();
     requestNotificationPermission();
     setInterval(updateCountdown, 1000);
 };
-
-function finishOnboarding() {
-    state.persona = {
-        type: document.getElementById('user-type').value,
-        goal: document.getElementById('user-goal').value,
-        dislike: document.getElementById('user-dislike').value,
-        timeline: document.getElementById('user-timeline').value
-    };
-    
-    localStorage.setItem('onboarded', 'true');
-    localStorage.setItem('userPersona', JSON.stringify(state.persona));
-    document.getElementById('onboarding-modal').classList.add('hidden');
-    renderProfile();
-    startTutorial();
-    showToast(`Ready to go, ${state.persona.type}!`);
-}
 
 function startTutorial() {
     state.tutorialStep = 0;
@@ -166,10 +146,21 @@ function openModal() {
     showToast("Opening Event Creator...");
 }
 
-function closeAuth() {
-    document.getElementById('auth-screen').classList.remove('visible');
-    document.getElementById('auth-screen').classList.add('hidden');
-    showToast("Welcome back, Felix!");
+const ACCOUNT_EMAIL = 'bookfred@hotmail.ca';
+const ACCOUNT_PASSWORD = 'felix2025';
+
+function handleSignIn() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const errEl = document.getElementById('auth-error');
+    if (email === ACCOUNT_EMAIL && password === ACCOUNT_PASSWORD) {
+        errEl.style.display = 'none';
+        document.getElementById('auth-screen').classList.remove('visible');
+        document.getElementById('auth-screen').classList.add('hidden');
+        showToast("Welcome back, Felix!");
+    } else {
+        errEl.style.display = 'block';
+    }
 }
 
 function toggleTheme() {
