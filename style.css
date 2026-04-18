@@ -55,6 +55,8 @@ nav {
   display: flex; flex-direction: column; gap: 4px;
 }
 
+.nav-divider { height: 1px; background: var(--border); margin: 8px 4px; }
+
 .nav-item {
   padding: 10px 14px; border-radius: 8px; cursor: pointer;
   font-size: 0.9rem; font-weight: 500; color: var(--muted); transition: all .15s;

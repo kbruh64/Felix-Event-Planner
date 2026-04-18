@@ -122,6 +122,17 @@ function renderCategories() {
             ${cat.name.split(' ')[0]}
         </div>
     `).join('');
+    container.innerHTML = categories.map(cat => {
+        const parts = cat.name.split(' ');
+        const emoji = parts.pop();
+        const label = parts.join(' ');
+        return `
+            <div class="cat-badge" style="background: ${cat.color}; box-shadow: 0 4px 0 rgba(0,0,0,0.1);" onclick="selectCategory('${cat.name}')">
+                <span style="font-size: 1.2rem; display: block;">${emoji}</span>
+                ${label}
+            </div>
+        `;
+    }).join('');
 }
 
 function selectCategory(name, el) {
@@ -146,8 +157,13 @@ function showSection(id, btn) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
-    document.getElementById(`${id}-section`).classList.remove('hidden');
+    const target = document.getElementById(`${id}-section`);
+    if (target) target.classList.remove('hidden');
     if (id === 'analytics') updateAnalytics();
+}
+
+function openModal() {
+    showToast("Opening Event Creator...");
 }
 
 function closeAuth() {

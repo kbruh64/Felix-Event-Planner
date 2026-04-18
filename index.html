@@ -39,9 +39,15 @@
     <div class="layout">
         <nav>
             <div class="nav-item active" onclick="showSection('dashboard', this)">🏠 Home</div>
+            <div class="nav-item" onclick="showSection('events', this)">📅 All Events</div>
+            <div class="nav-item" onclick="showSection('calendar', this)">📆 Calendar</div>
+            <div class="nav-item" onclick="showSection('vendors', this)">🏪 Vendors</div>
+            <div class="nav-divider"></div>
             <div class="nav-item" onclick="showSection('guests', this)">🐥 Guests</div>
             <div class="nav-item" onclick="showSection('budget', this)">💰 Piggy Bank</div>
             <div class="nav-item" onclick="showSection('analytics', this)">📊 Progress</div>
+            <div class="nav-divider"></div>
+            <div class="nav-item" onclick="openModal()">➕ Create Event</div>
         </nav>
 
         <main id="app">
@@ -112,7 +118,22 @@
             </div>
         </section>
 
-        <!-- Other sections continue... -->
+        <!-- New Section Placeholders -->
+        <section id="events-section" class="hidden">
+            <div class="page-header"><div class="page-title">All Events</div></div>
+            <div class="card"><p>Your full list of planned parties will appear here!</p></div>
+        </section>
+
+        <section id="calendar-section" class="hidden">
+            <div class="page-header"><div class="page-title">Event Calendar</div></div>
+            <div class="card"><p>Calendar view is coming soon!</p></div>
+        </section>
+
+        <section id="vendors-section" class="hidden">
+            <div class="page-header"><div class="page-title">Vendor Finder</div></div>
+            <div class="card"><p>Find cakes, balloons, and venues near you.</p></div>
+        </section>
+
         </main>
     </div>
 
