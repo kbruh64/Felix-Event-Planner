@@ -13,8 +13,13 @@ let state = {
     savingsMonths: 3,
     notes: [],
     currentUser: null,
-    readinessChecks: {}
+    readinessChecks: {},
+    activeEventId: null
 };
+
+// ── EVENTS STORE ──────────────────────────────────────────────────────────────
+function getEvents() { return JSON.parse(localStorage.getItem("fep_events") || "[]"); }
+function saveEvents(evts) { localStorage.setItem("fep_events", JSON.stringify(evts)); }
 
 const categories = [
     { id: "birthday", label: "Birthday", icon: "🎂", color: "#ff9ff3" },
@@ -258,6 +263,17 @@ function bindUI() {
     document.getElementById("add-note-btn").addEventListener("click", addNote);
     document.getElementById("readiness-refresh-btn").addEventListener("click", renderReadiness);
 
+    // Create Event modal
+    document.getElementById("modal-close-btn").addEventListener("click", closeCreateEventModal);
+    document.getElementById("modal-cancel-btn").addEventListener("click", closeCreateEventModal);
+    document.getElementById("modal-create-btn").addEventListener("click", createEvent);
+    document.getElementById("create-event-modal").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) closeCreateEventModal();
+    });
+    document.getElementById("modal-event-name").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") createEvent();
+    });
+
     // Settings
     document.getElementById("settings-theme-btn").addEventListener("click", toggleTheme);
     document.getElementById("save-event-date-btn").addEventListener("click", saveEventDate);
@@ -384,6 +400,7 @@ function showSection(id, btn) {
     if (id === "calendar") renderCalendar();
     if (id === "savings") renderSavings();
     if (id === "readiness") renderReadiness();
+    if (id === "events") renderMyEvents();
 }
 
 function goHome() {
@@ -437,11 +454,228 @@ function renderCategories() {
 }
 
 function selectCategory(categoryId, btnEl) {
-    state.selectedCategory = categoryId;
+    openCreateEventModal(categoryId);
+}
+
+// ── CREATE EVENT MODAL ────────────────────────────────────────────────────────
+let _pendingTemplateId = null;
+
+function openCreateEventModal(templateId) {
+    _pendingTemplateId = templateId;
+    const cat = categories.find((c) => c.id === templateId) || {};
+    document.getElementById("modal-template-emoji").textContent = cat.icon || "🎉";
+    document.getElementById("modal-template-name").textContent = (cat.label || templateId) + " Template";
+    document.getElementById("modal-event-name").value = "";
+    document.getElementById("modal-event-date").value = "";
+    document.getElementById("modal-event-notes").value = "";
+    document.getElementById("create-event-modal").classList.remove("hidden");
+    setTimeout(() => document.getElementById("modal-event-name").focus(), 80);
+}
+
+function closeCreateEventModal() {
+    document.getElementById("create-event-modal").classList.add("hidden");
+    _pendingTemplateId = null;
+}
+
+function createEvent() {
+    const name = document.getElementById("modal-event-name").value.trim();
+    if (!name) { showToast("Give your event a name."); document.getElementById("modal-event-name").focus(); return; }
+    const date = document.getElementById("modal-event-date").value;
+    const notes = document.getElementById("modal-event-notes").value.trim();
+    const templateId = _pendingTemplateId;
+    const template = templates[templateId];
+
+    const tasks = (template?.tasks || []).map((text, i) => ({ id: i, text, done: false }));
+    const evt = {
+        id: Date.now().toString(),
+        name,
+        templateId,
+        date: date || null,
+        notes,
+        tasks,
+        created: new Date().toISOString()
+    };
+
+    const evts = getEvents();
+    evts.unshift(evt);
+    saveEvents(evts);
+    closeCreateEventModal();
+    openEvent(evt.id);
+    showToast(`Event "${name}" created!`);
+}
+
+function openEvent(id) {
+    const evts = getEvents();
+    const evt = evts.find((e) => e.id === id);
+    if (!evt) return;
+    state.activeEventId = id;
+    state.selectedCategory = evt.templateId;
+    if (evt.date) state.eventDate = new Date(evt.date);
     saveStateToStorage();
-    highlightSelectedCategory(categoryId, btnEl);
-    renderTemplateDetail(categoryId);
+    renderEventDetail(evt);
     showSection("template-detail");
+}
+
+function renderMyEvents() {
+    const evts = getEvents();
+    const el = document.getElementById("my-events-list");
+    if (!el) return;
+    if (evts.length === 0) {
+        el.innerHTML = `<div class="empty-state">No events yet — pick a template below to create your first one.</div>`;
+        return;
+    }
+    el.innerHTML = evts.map((evt) => {
+        const cat = categories.find((c) => c.id === evt.templateId) || {};
+        const done = evt.tasks.filter((t) => t.done).length;
+        const total = evt.tasks.length;
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        const daysLeft = evt.date ? Math.ceil((new Date(evt.date) - new Date()) / 86400000) : null;
+        const dateLabel = evt.date
+            ? (daysLeft < 0 ? "Past event" : daysLeft === 0 ? "Today!" : `${daysLeft}d away`)
+            : "No date set";
+        return `
+        <div class="my-event-card" data-id="${evt.id}">
+            <div class="my-event-emoji" style="background:${cat.color || "#6366f1"}22">${cat.icon || "🎉"}</div>
+            <div class="my-event-body">
+                <div class="my-event-name">${evt.name}</div>
+                <div class="my-event-meta">
+                    <span>${cat.label || evt.templateId}</span>
+                    <span class="my-event-date ${daysLeft !== null && daysLeft < 7 && daysLeft >= 0 ? "urgent" : ""}">${dateLabel}</span>
+                </div>
+                <div class="my-event-bar-wrap"><div class="my-event-bar" style="width:${pct}%;background:${cat.color || "#6366f1"}"></div></div>
+                <div class="my-event-progress">${done}/${total} tasks · ${pct}% done</div>
+            </div>
+            <div class="my-event-actions">
+                <button class="btn btn-primary btn-sm my-event-open" data-id="${evt.id}">Open →</button>
+                <button class="btn btn-ghost btn-sm my-event-delete" data-id="${evt.id}">Delete</button>
+            </div>
+        </div>`;
+    }).join("");
+
+    el.querySelectorAll(".my-event-open").forEach((btn) => btn.addEventListener("click", () => openEvent(btn.dataset.id)));
+    el.querySelectorAll(".my-event-delete").forEach((btn) => btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!confirm("Delete this event?")) return;
+        const evts = getEvents().filter((e) => e.id !== btn.dataset.id);
+        saveEvents(evts);
+        renderMyEvents();
+        showToast("Event deleted.");
+    }));
+}
+
+function renderEventDetail(evt) {
+    const cat = categories.find((c) => c.id === evt.templateId) || {};
+    const template = templates[evt.templateId] || {};
+
+    document.getElementById("template-title").textContent = evt.name;
+    document.getElementById("template-emoji").textContent = cat.icon || "🎉";
+    document.getElementById("template-hero-title").textContent = `${cat.icon || "🎉"}  ${evt.name}`;
+    document.getElementById("template-description").textContent = evt.notes || template.description || "";
+    document.getElementById("template-hero").style.setProperty("border-color", cat.color || "#6366f1");
+
+    document.getElementById("template-spec-grid").innerHTML = `
+        <div class="spec-card"><span>Template</span><strong>${cat.label || evt.templateId}</strong></div>
+        <div class="spec-card"><span>Created</span><strong>${new Date(evt.created).toLocaleDateString()}</strong></div>
+        <div class="spec-card"><span>Guests (est.)</span><strong>${template.spec?.guests || "—"}</strong></div>
+        <div class="spec-card"><span>Budget (est.)</span><strong>${template.spec?.budget || "—"}</strong></div>
+    `;
+
+    const dateInput = document.getElementById("template-event-date");
+    if (evt.date) dateInput.value = evt.date;
+    document.getElementById("template-save-date-btn").onclick = () => {
+        const val = dateInput.value;
+        if (!val) { showToast("Pick a date first."); return; }
+        const evts = getEvents();
+        const found = evts.find((e) => e.id === evt.id);
+        if (found) { found.date = val; saveEvents(evts); evt.date = val; }
+        state.eventDate = new Date(val);
+        saveStateToStorage();
+        updateCountdown();
+        showToast("Date saved!");
+    };
+
+    if (template.timeline) {
+        document.getElementById("template-timeline").innerHTML = template.timeline.map((t) => `
+            <div class="tpl-timeline-item">
+                <div class="tpl-timeline-dot" style="background:${cat.color || "#6366f1"}"></div>
+                <span>${t}</span>
+            </div>`).join("");
+    }
+    if (template.tips) {
+        document.getElementById("template-tips").innerHTML = template.tips.map((t) => `
+            <div class="tpl-tip-item"><span class="tpl-tip-icon">💡</span><span>${t}</span></div>`).join("");
+    }
+    if (template.stores) {
+        document.getElementById("template-stores").innerHTML = template.stores.map((s) => `<div class="store-card">${s}</div>`).join("");
+    }
+
+    renderEventTasks(evt);
+
+    document.getElementById("tpl-add-task-btn").onclick = () => {
+        const input = document.getElementById("tpl-add-task-input");
+        const text = input.value.trim();
+        if (!text) return;
+        const evts = getEvents();
+        const found = evts.find((e) => e.id === evt.id);
+        if (found) { found.tasks.push({ id: Date.now(), text, done: false }); saveEvents(evts); evt.tasks = found.tasks; }
+        input.value = "";
+        renderEventTasks(evt);
+        showToast("Task added.");
+    };
+    document.getElementById("tpl-add-task-input").onkeydown = (e) => {
+        if (e.key === "Enter") document.getElementById("tpl-add-task-btn").click();
+    };
+    document.getElementById("tpl-reset-tasks-btn").onclick = () => {
+        if (!confirm("Reset all tasks?")) return;
+        const evts = getEvents();
+        const found = evts.find((e) => e.id === evt.id);
+        if (found) { found.tasks.forEach((t) => t.done = false); saveEvents(evts); evt.tasks = found.tasks; }
+        renderEventTasks(evt);
+    };
+}
+
+function renderEventTasks(evt) {
+    const tasks = evt.tasks;
+    const done = tasks.filter((t) => t.done).length;
+    const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+
+    document.getElementById("tpl-task-progress").textContent = `${done} / ${tasks.length} done`;
+    document.getElementById("tpl-progress-bar").style.width = pct + "%";
+
+    const heroStats = document.getElementById("template-hero-stats");
+    if (heroStats) heroStats.innerHTML = `
+        <div class="tpl-hero-stat"><div class="tpl-hero-stat-num">${pct}%</div><div class="tpl-hero-stat-label">complete</div></div>
+        <div class="tpl-hero-stat"><div class="tpl-hero-stat-num">${tasks.length - done}</div><div class="tpl-hero-stat-label">left</div></div>
+    `;
+
+    const list = document.getElementById("tpl-task-list");
+    list.innerHTML = tasks.map((task, i) => `
+        <div class="tpl-task-item${task.done ? " tpl-task-done" : ""}">
+            <label class="tpl-task-check-wrap">
+                <input type="checkbox" class="tpl-task-check" data-i="${i}" ${task.done ? "checked" : ""}>
+                <span class="tpl-checkmark"></span>
+            </label>
+            <span class="tpl-task-text">${task.text}</span>
+            <button type="button" class="tpl-task-remove" data-i="${i}" title="Remove">✕</button>
+        </div>
+    `).join("");
+
+    list.querySelectorAll(".tpl-task-check").forEach((cb) => {
+        cb.addEventListener("change", () => {
+            const evts = getEvents();
+            const found = evts.find((e) => e.id === evt.id);
+            if (found) { found.tasks[cb.dataset.i].done = cb.checked; saveEvents(evts); evt.tasks = found.tasks; }
+            renderEventTasks(evt);
+        });
+    });
+    list.querySelectorAll(".tpl-task-remove").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const evts = getEvents();
+            const found = evts.find((e) => e.id === evt.id);
+            if (found) { found.tasks.splice(Number(btn.dataset.i), 1); saveEvents(evts); evt.tasks = found.tasks; }
+            renderEventTasks(evt);
+        });
+    });
 }
 
 function highlightSelectedCategory(categoryId, btnEl) {
