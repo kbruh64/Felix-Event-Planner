@@ -28,7 +28,8 @@ const categories = [
     { id: "holiday-party", label: "Holiday Party", icon: "🎄", color: "#0abde3" },
     { id: "picnic", label: "Picnic", icon: "🧺", color: "#10ac84" },
     { id: "graduation", label: "Graduation", icon: "🎓", color: "#54a0ff" },
-    { id: "anniversary", label: "Anniversary", icon: "💍", color: "#f368e0" }
+    { id: "anniversary", label: "Anniversary", icon: "💍", color: "#f368e0" },
+    { id: "wedding", label: "Wedding", icon: "💒", color: "#e8b4d0" }
 ];
 
 const templates = {
@@ -119,6 +120,45 @@ const templates = {
         spec: { vibe: "Elegant and intimate", guests: "2 to 10 guests", budget: "$150 to $500", location: "Restaurant, patio dinner, or home setup" },
         timeline: ["2 weeks out: reserve venue or dinner plan", "1 week out: choose gift and flowers", "2 days out: confirm details", "Celebration day: keep the schedule light"],
         stores: ["Target for candles and dinner details", "Trader Joe's for flowers and dessert", "Local florist for a custom bouquet"]
+    },
+    wedding: {
+        tasks: [
+            "Book ceremony venue", "Book reception venue", "Hire officiant",
+            "Send save-the-dates", "Send formal invitations", "Finalize guest list",
+            "Hire caterer", "Order wedding cake", "Book photographer", "Book videographer",
+            "Hire DJ or band", "Book florist", "Choose bridal party", "Order wedding dress",
+            "Order bridesmaid dresses", "Book suits or tuxedos", "Arrange transportation",
+            "Book hair and makeup", "Plan honeymoon", "Get marriage license",
+            "Write vows", "Finalize seating chart", "Confirm all vendors week-of",
+            "Prepare wedding day timeline", "Arrange rehearsal dinner"
+        ],
+        description: "A comprehensive wedding planner covering venue, vendors, guests, attire, and the day-of timeline — everything in one place.",
+        tips: [
+            "Book the venue and photographer first — they fill up 12+ months out.",
+            "Set aside 10% of your budget as a buffer for surprises.",
+            "Assign a day-of coordinator so you can enjoy the day.",
+            "Chase RSVPs firmly — most guests need a reminder.",
+            "Confirm every vendor in writing at least 2 weeks before the date."
+        ],
+        spec: { vibe: "Elegant and celebratory", guests: "50 to 200 guests", budget: "$8,000 to $30,000+", location: "Venue, banquet hall, garden, or destination" },
+        timeline: [
+            "12+ months out: set budget, book venue and photographer",
+            "9 months out: hire caterer, florist, DJ/band, and officiant",
+            "6 months out: send save-the-dates, order dress and suits",
+            "4 months out: send formal invitations, plan honeymoon",
+            "2 months out: finalize menu, seating chart, and vows",
+            "2 weeks out: confirm all vendors and share day-of timeline",
+            "Week of: pick up rings, marriage license, final dress fitting",
+            "Day before: rehearsal dinner and final coordinator briefing"
+        ],
+        stores: [
+            "Zola or The Knot for registry and planning tools",
+            "David's Bridal for dress and bridesmaid attire",
+            "Michaels or Hobby Lobby for DIY decor and centerpieces",
+            "Costco for bulk flowers, catering trays, and beverages",
+            "Etsy for custom invitations, signage, and favors",
+            "Target for day-of details, candles, and getting-ready supplies"
+        ]
     }
 };
 
