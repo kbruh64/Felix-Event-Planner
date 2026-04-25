@@ -1,7 +1,7 @@
 let state = {
     guests: [],
     expenses: [],
-    budgetLimit: 1000,
+    budgetLimit: 0,
     selectedCategory: null,
     persona: { goal: "", dislike: "", timeline: "" },
     eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -159,7 +159,7 @@ function loadStateFromStorage() {
         const parsed = JSON.parse(saved);
         state.guests = parsed.guests || [];
         state.expenses = parsed.expenses || [];
-        state.budgetLimit = parsed.budgetLimit || 1000;
+        state.budgetLimit = parsed.budgetLimit ?? 0;
         state.calendarEvents = parsed.calendarEvents || [];
         state.income = parsed.income || 0;
         state.savingsGoal = parsed.savingsGoal || 0;
@@ -632,7 +632,7 @@ function updateRSVPCounts() {
     const total = state.guests.length;
     const confirmed = state.guests.filter((g) => g.rsvp === "Confirmed").length;
     const percent = total === 0 ? 0 : Math.round((confirmed / total) * 100);
-    document.getElementById("rsvp-stat").textContent = `${percent}%`;
+    countUp(document.getElementById("rsvp-stat"), percent, "", "%");
 }
 
 // ── BUDGET ────────────────────────────────────────────────────────────────────
@@ -683,8 +683,8 @@ function updateBudget() {
     const left = remaining;
     const budgetStatEl = document.getElementById("budget-stat");
     if (budgetStatEl) {
-        budgetStatEl.textContent = `$${Math.max(left, 0).toFixed(0)}`;
         budgetStatEl.style.color = over ? "var(--red)" : "var(--green)";
+        countUp(budgetStatEl, Math.max(left, 0), "$", "", 500);
     }
 
     renderSavings();
@@ -718,10 +718,10 @@ function renderSavings() {
     const leftEl = document.getElementById("savings-left-display");
     if (!incomeEl) return;
 
-    incomeEl.textContent = `$${state.income.toFixed(2)}`;
-    expEl.textContent = `$${totalSpent.toFixed(2)}`;
-    leftEl.textContent = `$${moneyLeft.toFixed(2)}`;
+    countUp(incomeEl, state.income, "$", "", 500);
+    countUp(expEl, totalSpent, "$", "", 500);
     leftEl.style.color = moneyLeft < 0 ? "var(--red)" : "var(--green)";
+    countUp(leftEl, Math.abs(moneyLeft), moneyLeft < 0 ? "-$" : "$", "", 500);
 
     // Populate inputs with current values if empty
     const incInput = document.getElementById("savings-income");
@@ -983,7 +983,26 @@ function showToast(message) {
     toast.className = "toast";
     toast.textContent = message;
     container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    setTimeout(() => {
+        toast.classList.add("toast-out");
+        setTimeout(() => toast.remove(), 260);
+    }, 2800);
+}
+
+function countUp(el, target, prefix = "", suffix = "", duration = 600) {
+    if (!el) return;
+    const start = 0;
+    const startTime = performance.now();
+    const isFloat = target % 1 !== 0;
+    const step = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const value = start + (target - start) * eased;
+        el.textContent = prefix + (isFloat ? value.toFixed(2) : Math.round(value)) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
 }
 
 function copyEventLink() {
