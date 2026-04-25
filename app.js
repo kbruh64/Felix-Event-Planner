@@ -5,7 +5,6 @@ let state = {
     selectedCategory: null,
     persona: { goal: "", dislike: "", timeline: "" },
     eventDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    tutorialStep: 0,
     calendarEvents: [],
     calendarYear: new Date().getFullYear(),
     calendarMonth: new Date().getMonth(),
@@ -162,16 +161,6 @@ const templates = {
     }
 };
 
-const tutorialSteps = [
-    { text: "Welcome! This is your Dashboard — your command center for every event.", element: "dashboard-section", section: "dashboard" },
-    { text: "Pick a template here to instantly populate your event with tasks, vendors, and a timeline.", element: "category-selector", section: "dashboard" },
-    { text: "Head to Guests to track RSVPs, dietary notes, and your full guest list.", element: "guests-section", section: "guests" },
-    { text: "Track every expense here and set a budget cap — broke mode kicks in when you're over budget.", element: "budget-section", section: "budget" },
-    { text: "The Calendar keeps all your event dates in one scrollable view.", element: "calendar-section", section: "calendar" },
-    { text: "Use Savings to set an income and goal so the app tells you how many months to save.", element: "savings-section", section: "savings" },
-    { text: "Jot down anything in Notes — ideas, vendor contacts, seating notes.", element: "notes-section", section: "notes" },
-    { text: "You're all set! Check Analytics any time to see your RSVP and spend summary.", element: "analytics-section", section: "analytics" }
-];
 
 window.onload = () => {
     initTheme();
@@ -247,8 +236,9 @@ function bindUI() {
     document.getElementById("share-button").addEventListener("click", copyEventLink);
     document.getElementById("back-home-button").addEventListener("click", goHome);
     document.getElementById("add-guest-button").addEventListener("click", addGuest);
+    document.getElementById("guest-search").addEventListener("input", renderGuests);
+    document.getElementById("guest-filter").addEventListener("change", renderGuests);
     document.getElementById("add-expense-button").addEventListener("click", addExpense);
-    document.getElementById("help-btn").addEventListener("click", startTutorial);
     document.getElementById("dashboard-custom-template-button").addEventListener("click", () => {
         const btn = document.querySelector('.nav-item[data-section="custom-template"]');
         showSection("custom-template", btn);
@@ -280,14 +270,12 @@ function bindUI() {
 
 function initAfterAuth() {
     renderProfile();
-    // update nav badge without full render (section not visible yet)
     setTimeout(() => {
         const tasks = buildSmartChecklist();
         const score = computeReadinessScore(tasks);
         const badge = document.getElementById("nav-readiness-badge");
         if (badge) badge.textContent = score + "%";
     }, 0);
-    if (!localStorage.getItem("tutorialDone")) startTutorial();
 }
 
 function getAccounts() {
@@ -403,83 +391,6 @@ function goHome() {
     showSection("dashboard", homeBtn);
 }
 
-// ── TUTORIAL ──────────────────────────────────────────────────────────────────
-
-let _tourListenersAttached = false;
-function startTutorial() {
-    state.tutorialStep = 0;
-    const overlay = document.getElementById("tutorial-overlay");
-    overlay.classList.remove("hidden");
-
-    if (!_tourListenersAttached) {
-        _tourListenersAttached = true;
-        document.getElementById("tutorial-next").addEventListener("click", (e) => {
-            e.stopPropagation();
-            nextTutorialStep();
-        });
-        document.getElementById("tutorial-skip").addEventListener("click", (e) => {
-            e.stopPropagation();
-            endTutorial();
-        });
-    }
-
-    renderTutorialStep();
-}
-
-function endTutorial() {
-    document.getElementById("tutorial-overlay").classList.add("hidden");
-    document.querySelectorAll(".tutorial-highlight").forEach((el) => el.classList.remove("tutorial-highlight"));
-    localStorage.setItem("tutorialDone", "true");
-}
-
-function renderTutorialStep() {
-    const total = tutorialSteps.length;
-    const idx = state.tutorialStep;
-    if (idx >= total) { endTutorial(); return; }
-
-    const box = document.getElementById("tutorial-box");
-    box.classList.remove("tutorial-pop");
-    box.offsetWidth; // reflow
-    box.classList.add("tutorial-pop");
-
-    const step = tutorialSteps[idx];
-
-    // navigate to the section
-    const navBtn = document.querySelector(`.nav-item[data-section="${step.section}"]`);
-    showSection(step.section, navBtn);
-
-    // update text + counter
-    document.getElementById("tutorial-text").textContent = step.text;
-    document.getElementById("tutorial-step-label").textContent = `Step ${idx + 1} of ${total}`;
-
-    const nextBtn = document.getElementById("tutorial-next");
-    nextBtn.textContent = idx === total - 1 ? "Done ✓" : "Next →";
-
-    // dots
-    const dotsEl = document.getElementById("tutorial-dots");
-    dotsEl.innerHTML = tutorialSteps.map((_, i) =>
-        `<span class="tutorial-dot${i === idx ? " active" : ""}"></span>`
-    ).join("");
-
-    // highlight target
-    document.querySelectorAll(".tutorial-highlight").forEach((el) => el.classList.remove("tutorial-highlight"));
-    const target = document.getElementById(step.element);
-    if (target) {
-        target.classList.add("tutorial-highlight");
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-
-    positionTutorialBox();
-}
-
-function positionTutorialBox() {
-    // Fixed bottom-right — always fully visible, never overlaps content
-}
-
-function nextTutorialStep() {
-    state.tutorialStep += 1;
-    renderTutorialStep();
-}
 
 // ── PROFILE ───────────────────────────────────────────────────────────────────
 
@@ -822,21 +733,62 @@ function addGuest() {
 }
 
 function renderGuests() {
+    const total = state.guests.length;
+    const confirmed = state.guests.filter((g) => g.rsvp === "Confirmed").length;
+    const pending   = state.guests.filter((g) => g.rsvp === "Pending").length;
+    const declined  = state.guests.filter((g) => g.rsvp === "Declined").length;
+    const allergies = state.guests.filter((g) => g.allergy && g.allergy.trim()).length;
+
+    // stat cards
+    const set = (id, val) => { const el = document.getElementById(id); if (el) countUp(el, val); };
+    set("gstat-total", total);
+    set("gstat-confirmed", confirmed);
+    set("gstat-pending", pending);
+    set("gstat-declined", declined);
+    set("gstat-allergy", allergies);
+
+    // RSVP progress bar
+    if (total > 0) {
+        const cp = (confirmed / total * 100).toFixed(1);
+        const dp = (declined  / total * 100).toFixed(1);
+        const pp = (pending   / total * 100).toFixed(1);
+        const seg = (id, pct) => { const el = document.getElementById(id); if (el) el.style.width = pct + "%"; };
+        seg("grsvp-confirmed-seg", cp);
+        seg("grsvp-declined-seg",  dp);
+        seg("grsvp-pending-seg",   pp);
+    }
+
+    // filtered list
+    const search = (document.getElementById("guest-search")?.value || "").toLowerCase();
+    const filter = document.getElementById("guest-filter")?.value || "All";
+
+    const visible = state.guests
+        .map((g, i) => ({ ...g, i }))
+        .filter((g) => {
+            const matchFilter = filter === "All" || g.rsvp === filter;
+            const matchSearch = !search || g.name.toLowerCase().includes(search) || (g.allergy || "").toLowerCase().includes(search);
+            return matchFilter && matchSearch;
+        });
+
     const tbody = document.getElementById("guest-body");
-    tbody.innerHTML = state.guests.map((guest, i) => `
+    tbody.innerHTML = visible.map(({ name, rsvp, allergy, i }) => `
         <tr>
-            <td><strong>${guest.name}</strong></td>
+            <td><strong>${name}</strong></td>
             <td>
                 <select onchange="updateRSVP(${i}, this.value)">
-                    <option value="Pending" ${guest.rsvp === "Pending" ? "selected" : ""}>Pending</option>
-                    <option value="Confirmed" ${guest.rsvp === "Confirmed" ? "selected" : ""}>Confirmed</option>
-                    <option value="Declined" ${guest.rsvp === "Declined" ? "selected" : ""}>Declined</option>
+                    <option value="Pending"   ${rsvp === "Pending"   ? "selected" : ""}>Pending</option>
+                    <option value="Confirmed" ${rsvp === "Confirmed" ? "selected" : ""}>Confirmed</option>
+                    <option value="Declined"  ${rsvp === "Declined"  ? "selected" : ""}>Declined</option>
                 </select>
             </td>
-            <td>${guest.allergy || "No allergies"}</td>
+            <td>${allergy || <span style="color:var(--text3)">—</span>}</td>
             <td><button type="button" class="btn btn-danger" onclick="removeGuest(${i})">Remove</button></td>
         </tr>
     `).join("");
+
+    const emptyEl = document.getElementById("guest-empty");
+    if (emptyEl) emptyEl.style.display = visible.length === 0 && total > 0 ? "" : "none";
+
     updateRSVPCounts();
 }
 

@@ -182,19 +182,6 @@
     </nav>
 
     <main id="app">
-        <div id="tutorial-overlay" class="tutorial-overlay hidden">
-            <div id="tutorial-box" class="tutorial-box">
-                <div class="tutorial-header">
-                    <span id="tutorial-step-label" class="tutorial-step-label"></span>
-                    <button type="button" id="tutorial-skip" class="tutorial-skip">Skip tour</button>
-                </div>
-                <p id="tutorial-text"></p>
-                <div class="tutorial-footer">
-                    <div id="tutorial-dots" class="tutorial-dots"></div>
-                    <button type="button" id="tutorial-next" class="btn btn-primary btn-sm">Next →</button>
-                </div>
-            </div>
-        </div>
 
         <!-- ── DASHBOARD ──────────────────────────────────────────────── -->
         <section id="dashboard-section" class="app-section">
@@ -203,7 +190,6 @@
                     <div class="hero-eyebrow">Event Planning Platform</div>
                     <h1 class="hero-title">Plan unforgettable events.</h1>
                     <p class="hero-sub">From intimate gatherings to large celebrations — manage guests, budget, vendors, and timeline in one place.</p>
-                    <button type="button" class="btn btn-hero" id="help-btn">Take the tour</button>
                 </div>
                 <div class="hero-orb hero-orb-1"></div>
                 <div class="hero-orb hero-orb-2"></div>
@@ -454,7 +440,45 @@
                     <div class="page-subtitle">Track RSVPs and dietary needs</div>
                 </div>
             </div>
-            <div class="card" style="margin-bottom:16px;">
+
+            <!-- stat cards -->
+            <div class="guest-stat-row" id="guest-stat-row">
+                <div class="guest-stat-card guest-stat-card--total">
+                    <div class="guest-stat-num" id="gstat-total">0</div>
+                    <div class="guest-stat-label">Total Guests</div>
+                </div>
+                <div class="guest-stat-card guest-stat-card--confirmed">
+                    <div class="guest-stat-num" id="gstat-confirmed">0</div>
+                    <div class="guest-stat-label">Confirmed</div>
+                </div>
+                <div class="guest-stat-card guest-stat-card--pending">
+                    <div class="guest-stat-num" id="gstat-pending">0</div>
+                    <div class="guest-stat-label">Pending</div>
+                </div>
+                <div class="guest-stat-card guest-stat-card--declined">
+                    <div class="guest-stat-num" id="gstat-declined">0</div>
+                    <div class="guest-stat-label">Declined</div>
+                </div>
+                <div class="guest-stat-card guest-stat-card--allergy">
+                    <div class="guest-stat-num" id="gstat-allergy">0</div>
+                    <div class="guest-stat-label">Dietary Notes</div>
+                </div>
+            </div>
+
+            <!-- RSVP progress bar -->
+            <div class="guest-rsvp-bar-wrap" id="guest-rsvp-bar-wrap">
+                <div class="guest-rsvp-segment guest-rsvp-confirmed" id="grsvp-confirmed-seg"></div>
+                <div class="guest-rsvp-segment guest-rsvp-declined" id="grsvp-declined-seg"></div>
+                <div class="guest-rsvp-segment guest-rsvp-pending" id="grsvp-pending-seg"></div>
+            </div>
+            <div class="guest-rsvp-legend">
+                <span><span class="legend-dot legend-dot--confirmed"></span>Confirmed</span>
+                <span><span class="legend-dot legend-dot--pending"></span>Pending</span>
+                <span><span class="legend-dot legend-dot--declined"></span>Declined</span>
+            </div>
+
+            <!-- Add guest -->
+            <div class="card" style="margin-bottom:16px;margin-top:20px;">
                 <div class="card-header"><h3>Add Guest</h3></div>
                 <div class="form-grid">
                     <input type="text" id="guest-name" placeholder="Guest name">
@@ -467,12 +491,26 @@
                     <button type="button" class="btn btn-primary" id="add-guest-button">Add Guest</button>
                 </div>
             </div>
+
+            <!-- Guest list with search + filter -->
             <div class="card">
-                <div class="card-header"><h3>Guest List</h3></div>
+                <div class="card-header" style="flex-wrap:wrap;gap:10px;">
+                    <h3>Guest List</h3>
+                    <div class="guest-list-controls">
+                        <input type="text" id="guest-search" placeholder="Search guests…" class="guest-search-input">
+                        <select id="guest-filter" class="guest-filter-select">
+                            <option value="All">All</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Declined">Declined</option>
+                        </select>
+                    </div>
+                </div>
                 <table class="data-table">
                     <thead><tr><th>Name</th><th>RSVP</th><th>Notes</th><th></th></tr></thead>
                     <tbody id="guest-body"></tbody>
                 </table>
+                <div id="guest-empty" class="empty-state" style="display:none;">No guests match your search.</div>
             </div>
         </section>
 
