@@ -314,11 +314,18 @@ function toggleTheme() {
     const next = isDark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     localStorage.setItem("fep_theme", next);
+    updateThemeBtn(next);
+}
+
+function updateThemeBtn(theme) {
+    const btn = document.getElementById("theme-toggle");
+    if (btn) btn.textContent = theme === "dark" ? "☀️" : "🌙";
 }
 
 function initTheme() {
     const saved = localStorage.getItem("fep_theme") || "light";
     document.documentElement.setAttribute("data-theme", saved);
+    updateThemeBtn(saved);
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
