@@ -781,7 +781,7 @@ function renderGuests() {
                     <option value="Declined"  ${rsvp === "Declined"  ? "selected" : ""}>Declined</option>
                 </select>
             </td>
-            <td>${allergy || <span style="color:var(--text3)">—</span>}</td>
+            <td>${allergy || '<span style="color:var(--text3)">—</span>'}</td>
             <td><button type="button" class="btn btn-danger" onclick="removeGuest(${i})">Remove</button></td>
         </tr>
     `).join("");
