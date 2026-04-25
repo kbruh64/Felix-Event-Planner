@@ -495,15 +495,29 @@ function renderCustomTemplateList() {
         container.innerHTML = `<div class="empty-state">No custom templates yet. Build one above.</div>`;
         return;
     }
-    container.innerHTML = custom.map((t) => `
-        <button type="button" class="cat-badge" data-custom-template-id="${t.id}" style="background:${t.color || "#f97316"};">
-            <span class="cat-icon">✨</span>
-            <span>${t.label}</span>
-        </button>
-    `).join("");
+    container.innerHTML = `<div class="custom-template-grid">${custom.map((t) => `
+        <div class="custom-template-item">
+            <button type="button" class="cat-badge" data-custom-template-id="${t.id}" style="background:${t.color || "#f97316"}; width:100%;">
+                <span class="cat-icon">✨</span>
+                <span>${t.label}</span>
+            </button>
+            <button type="button" class="btn-remove-template" onclick="removeCustomTemplate('${t.id}')" title="Delete template">✕</button>
+        </div>
+    `).join("")}</div>`;
     container.querySelectorAll("[data-custom-template-id]").forEach((btn) => {
         btn.addEventListener("click", () => selectCategory(btn.dataset.customTemplateId, btn));
     });
+}
+
+function removeCustomTemplate(id) {
+    const updated = getCustomTemplates().filter((t) => t.id !== id);
+    saveCustomTemplates(updated);
+    delete templates[id];
+    const catIndex = categories.findIndex((c) => c.id === id);
+    if (catIndex !== -1) categories.splice(catIndex, 1);
+    renderCategories();
+    renderCustomTemplateList();
+    showToast("Template deleted.");
 }
 
 function saveCustomTemplate() {
@@ -593,7 +607,7 @@ function renderGuests() {
                 </select>
             </td>
             <td>${guest.allergy || "No allergies"}</td>
-            <td><button type="button" class="btn btn-secondary" onclick="removeGuest(${i})">Remove</button></td>
+            <td><button type="button" class="btn btn-danger" onclick="removeGuest(${i})">Remove</button></td>
         </tr>
     `).join("");
     updateRSVPCounts();
@@ -661,7 +675,7 @@ function updateBudget() {
             <li class="expense-row">
                 <span>${e.name}</span>
                 <span>$${e.cost.toFixed(2)}</span>
-                <button type="button" class="btn btn-secondary" onclick="removeExpense(${i})" style="padding:4px 10px;font-size:0.8rem;">✕</button>
+                <button type="button" class="btn-icon-remove" onclick="removeExpense(${i})" title="Remove expense">✕</button>
             </li>
           `).join("")
         : `<li class="empty-state">No expenses yet.</li>`;
@@ -883,7 +897,7 @@ function renderCalendar() {
                 <strong>${ev.title}</strong>
                 <span>${formatDate(ev.date)}</span>
             </div>
-            <button type="button" class="btn btn-secondary" onclick="removeCalendarEvent(${i})" style="padding:4px 10px;font-size:0.8rem;">✕</button>
+            <button type="button" class="btn-icon-remove" onclick="removeCalendarEvent(${i})" title="Remove event">✕</button>
         </div>
     `;
 
@@ -930,7 +944,7 @@ function renderNotes() {
         <div class="note-card" style="background:${note.color}">
             <div class="note-header">
                 <strong>${note.title}</strong>
-                <button type="button" onclick="removeNote(${i})" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.6;">✕</button>
+                <button type="button" class="btn-icon-remove" onclick="removeNote(${i})" title="Remove note">✕</button>
             </div>
             <div class="note-body">${note.body || ""}</div>
             <div class="note-date">${note.date}</div>
