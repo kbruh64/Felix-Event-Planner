@@ -13,7 +13,8 @@ let state = {
     savingsGoal: 0,
     savingsMonths: 3,
     notes: [],
-    currentUser: null
+    currentUser: null,
+    readinessChecks: {}
 };
 
 const categories = [
@@ -122,11 +123,14 @@ const templates = {
 };
 
 const tutorialSteps = [
-    { text: "This is your home base for planning events.", element: "dashboard-section" },
-    { text: "Choose a template to open a full event planning view.", element: "category-selector" },
-    { text: "Manage your guests and allergy notes here.", element: "guests-section" },
-    { text: "Track expenses and watch your budget here.", element: "budget-section" },
-    { text: "See RSVP progress and budget summary here.", element: "analytics-section" }
+    { text: "Welcome! This is your Dashboard — your command center for every event.", element: "dashboard-section", section: "dashboard" },
+    { text: "Pick a template here to instantly populate your event with tasks, vendors, and a timeline.", element: "category-selector", section: "dashboard" },
+    { text: "Head to Guests to track RSVPs, dietary notes, and your full guest list.", element: "guests-section", section: "guests" },
+    { text: "Track every expense here and set a budget cap — broke mode kicks in when you're over budget.", element: "budget-section", section: "budget" },
+    { text: "The Calendar keeps all your event dates in one scrollable view.", element: "calendar-section", section: "calendar" },
+    { text: "Use Savings to set an income and goal so the app tells you how many months to save.", element: "savings-section", section: "savings" },
+    { text: "Jot down anything in Notes — ideas, vendor contacts, seating notes.", element: "notes-section", section: "notes" },
+    { text: "You're all set! Check Analytics any time to see your RSVP and spend summary.", element: "analytics-section", section: "analytics" }
 ];
 
 window.onload = () => {
@@ -167,6 +171,7 @@ function loadStateFromStorage() {
         state.notes = parsed.notes || [];
         if (parsed.eventDate) state.eventDate = new Date(parsed.eventDate);
         if (parsed.persona) state.persona = parsed.persona;
+        if (parsed.readinessChecks) state.readinessChecks = parsed.readinessChecks;
     }
 }
 
@@ -181,7 +186,8 @@ function saveStateToStorage() {
         savingsMonths: state.savingsMonths,
         notes: state.notes,
         eventDate: state.eventDate,
-        persona: state.persona
+        persona: state.persona,
+        readinessChecks: state.readinessChecks
     }));
 }
 
@@ -220,6 +226,7 @@ function bindUI() {
 
     // Notes
     document.getElementById("add-note-btn").addEventListener("click", addNote);
+    document.getElementById("readiness-refresh-btn").addEventListener("click", renderReadiness);
 
     // Settings
     document.getElementById("settings-theme-btn").addEventListener("click", toggleTheme);
@@ -233,6 +240,13 @@ function bindUI() {
 
 function initAfterAuth() {
     renderProfile();
+    // update nav badge without full render (section not visible yet)
+    setTimeout(() => {
+        const tasks = buildSmartChecklist();
+        const score = computeReadinessScore(tasks);
+        const badge = document.getElementById("nav-readiness-badge");
+        if (badge) badge.textContent = score + "%";
+    }, 0);
     if (!localStorage.getItem("tutorialDone")) startTutorial();
 }
 
@@ -341,6 +355,7 @@ function showSection(id, btn) {
     if (id === "analytics") updateAnalytics();
     if (id === "calendar") renderCalendar();
     if (id === "savings") renderSavings();
+    if (id === "readiness") renderReadiness();
 }
 
 function goHome() {
@@ -350,24 +365,119 @@ function goHome() {
 
 // ── TUTORIAL ──────────────────────────────────────────────────────────────────
 
+let _tourListenersAttached = false;
 function startTutorial() {
     state.tutorialStep = 0;
-    document.getElementById("tutorial-overlay").classList.remove("hidden");
-    nextTutorialStep();
+    const overlay = document.getElementById("tutorial-overlay");
+    overlay.classList.remove("hidden");
+
+    if (!_tourListenersAttached) {
+        _tourListenersAttached = true;
+        document.getElementById("tutorial-next").addEventListener("click", (e) => {
+            e.stopPropagation();
+            nextTutorialStep();
+        });
+        document.getElementById("tutorial-skip").addEventListener("click", (e) => {
+            e.stopPropagation();
+            endTutorial();
+        });
+    }
+
+    renderTutorialStep();
+}
+
+function endTutorial() {
+    document.getElementById("tutorial-overlay").classList.add("hidden");
+    document.querySelectorAll(".tutorial-highlight").forEach((el) => el.classList.remove("tutorial-highlight"));
+    localStorage.setItem("tutorialDone", "true");
+}
+
+function renderTutorialStep() {
+    const total = tutorialSteps.length;
+    const idx = state.tutorialStep;
+    if (idx >= total) { endTutorial(); return; }
+
+    // re-trigger pop animation
+    const box = document.getElementById("tutorial-box");
+    box.style.animation = "none";
+    box.offsetHeight; // reflow
+    box.style.animation = "";
+
+    const step = tutorialSteps[idx];
+
+    // navigate to the section
+    const navBtn = document.querySelector(`.nav-item[data-section="${step.section}"]`);
+    showSection(step.section, navBtn);
+
+    // update text + counter
+    document.getElementById("tutorial-text").textContent = step.text;
+    document.getElementById("tutorial-step-label").textContent = `Step ${idx + 1} of ${total}`;
+
+    const nextBtn = document.getElementById("tutorial-next");
+    nextBtn.textContent = idx === total - 1 ? "Done ✓" : "Next →";
+
+    // dots
+    const dotsEl = document.getElementById("tutorial-dots");
+    dotsEl.innerHTML = tutorialSteps.map((_, i) =>
+        `<span class="tutorial-dot${i === idx ? " active" : ""}"></span>`
+    ).join("");
+
+    // highlight target
+    document.querySelectorAll(".tutorial-highlight").forEach((el) => el.classList.remove("tutorial-highlight"));
+    const target = document.getElementById(step.element);
+    if (target) {
+        target.classList.add("tutorial-highlight");
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    // position tooltip near target
+    positionTutorialBox(target);
+}
+
+function positionTutorialBox(target) {
+    const box = document.getElementById("tutorial-box");
+    box.style.position = "fixed";
+
+    if (!target) {
+        box.style.top = "50%";
+        box.style.left = "50%";
+        box.style.transform = "translate(-50%, -50%)";
+        return;
+    }
+
+    // wait for scroll + layout
+    setTimeout(() => {
+        const rect = target.getBoundingClientRect();
+        const boxH = box.offsetHeight || 160;
+        const boxW = box.offsetWidth || 340;
+        const margin = 16;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        let top, left;
+
+        // prefer below target, else above
+        if (rect.bottom + boxH + margin < vh) {
+            top = rect.bottom + margin;
+        } else if (rect.top - boxH - margin > 0) {
+            top = rect.top - boxH - margin;
+        } else {
+            top = Math.max(margin, Math.min(vh - boxH - margin, rect.top));
+        }
+
+        // center horizontally on target, clamped to viewport
+        left = rect.left + rect.width / 2 - boxW / 2;
+        left = Math.max(margin, Math.min(vw - boxW - margin, left));
+
+        box.style.top = `${top}px`;
+        box.style.left = `${left}px`;
+        box.style.transform = "none";
+    }, 120);
 }
 
 function nextTutorialStep() {
-    if (state.tutorialStep >= tutorialSteps.length) {
-        document.getElementById("tutorial-overlay").classList.add("hidden");
-        localStorage.setItem("tutorialDone", "true");
-        return;
-    }
-    const step = tutorialSteps[state.tutorialStep];
-    document.getElementById("tutorial-text").textContent = step.text;
-    document.querySelectorAll(".tutorial-highlight").forEach((el) => el.classList.remove("tutorial-highlight"));
-    const target = document.getElementById(step.element);
-    if (target) target.classList.add("tutorial-highlight");
     state.tutorialStep += 1;
+    renderTutorialStep();
 }
 
 // ── PROFILE ───────────────────────────────────────────────────────────────────
@@ -1016,4 +1126,234 @@ function requestNotificationPermission() {
             if (p === "granted") showToast("Notifications enabled.");
         });
     }
+}
+
+// ── READINESS ─────────────────────────────────────────────────────────────────
+
+function buildSmartChecklist() {
+    const now = new Date();
+    const daysLeft = state.eventDate
+        ? Math.ceil((state.eventDate - now) / 86400000)
+        : null;
+    const guestCount = state.guests.length;
+    const confirmedCount = state.guests.filter((g) => g.rsvp === "Confirmed").length;
+    const totalSpend = state.expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+    const hasDate = !!state.eventDate;
+    const hasBudget = state.budgetLimit > 0;
+    const hasGuests = guestCount > 0;
+    const hasExpenses = state.expenses.length > 0;
+    const hasCalendar = state.calendarEvents.length > 0;
+    const hasNotes = state.notes.length > 0;
+
+    const tasks = [];
+
+    const add = (id, group, text, urgency, tip) =>
+        tasks.push({ id, group, text, urgency, tip });
+
+    // ── Foundation ───────────────────────────────────────────────────────────
+    if (!hasDate) add("set-date", "Foundation", "Set your event date", "critical",
+        "Go to Settings → Event Countdown to lock in a date. Everything else is timed from this.");
+    else if (daysLeft < 0) add("set-date", "Foundation", "Event date has passed — update it", "overdue",
+        "Head to Settings and pick a new event date.");
+    else add("set-date", "Foundation", "Event date is set", "done",
+        `${daysLeft} day${daysLeft !== 1 ? "s" : ""} to go.`);
+
+    if (!state.selectedCategory) add("pick-template", "Foundation", "Pick an event template", "critical",
+        "Go to Dashboard and choose a category like Birthday, Graduation, or Holiday Party.");
+    else add("pick-template", "Foundation", "Event template selected", "done",
+        `You chose: ${state.selectedCategory}.`);
+
+    if (!hasBudget) add("set-budget", "Foundation", "Set a budget limit", "high",
+        "Go to Budget and enter your total spending cap — even a rough number helps.");
+    else add("set-budget", "Foundation", "Budget limit set", "done",
+        `Cap is $${state.budgetLimit.toLocaleString()}.`);
+
+    // ── Guests ────────────────────────────────────────────────────────────────
+    if (!hasGuests) add("add-guests", "Guests", "Add your guest list", "high",
+        "Start with a rough headcount in the Guests section — you can update RSVPs later.");
+    else {
+        add("add-guests", "Guests", `${guestCount} guest${guestCount !== 1 ? "s" : ""} added`, "done",
+            "Good. Keep adding until you have everyone.");
+
+        const pendingCount = state.guests.filter((g) => g.rsvp === "Pending").length;
+        if (pendingCount > 0 && daysLeft !== null && daysLeft < 21)
+            add("chase-rsvp", "Guests", `Chase ${pendingCount} pending RSVP${pendingCount !== 1 ? "s" : ""}`, "high",
+                `${pendingCount} guest${pendingCount !== 1 ? "s are" : " is"} still Pending and your event is ${daysLeft} days away. Follow up now.`);
+        else if (pendingCount > 0)
+            add("chase-rsvp", "Guests", `${pendingCount} RSVPs still pending`, "medium",
+                "Not urgent yet — but set a deadline to have confirmations by 2 weeks out.");
+        else
+            add("chase-rsvp", "Guests", "All RSVPs resolved", "done",
+                `${confirmedCount} confirmed, no one pending.`);
+
+        const allergies = state.guests.filter((g) => g.allergy && g.allergy !== "No allergies");
+        if (allergies.length > 0)
+            add("allergy-plan", "Guests", `Plan for ${allergies.length} dietary restriction${allergies.length !== 1 ? "s" : ""}`, "medium",
+                allergies.map((g) => `${g.name}: ${g.allergy}`).join(" · "));
+    }
+
+    // ── Budget ────────────────────────────────────────────────────────────────
+    if (!hasExpenses && hasBudget)
+        add("log-expenses", "Budget & Spend", "Start logging expenses", "medium",
+            "Add your first expense in the Budget section — venue deposit, catering quote, decorations.");
+    else if (hasExpenses) {
+        const pct = hasBudget ? Math.round((totalSpend / state.budgetLimit) * 100) : null;
+        if (pct !== null && pct > 90)
+            add("log-expenses", "Budget & Spend", `Budget ${pct > 100 ? "OVER" : "almost gone"} (${pct}% used)`, pct > 100 ? "overdue" : "high",
+                `You've spent $${totalSpend.toLocaleString()} of $${state.budgetLimit.toLocaleString()}. Review expenses and cut where possible.`);
+        else
+            add("log-expenses", "Budget & Spend", `Expenses tracked ($${totalSpend.toLocaleString()} logged)`, "done",
+                pct !== null ? `${pct}% of budget used — ${100 - pct}% remaining.` : "Keep logging as costs come in.");
+    }
+
+    // ── Timeline tasks by days left ───────────────────────────────────────────
+    if (hasDate && daysLeft !== null && daysLeft > 0) {
+        if (daysLeft <= 60)
+            add("book-venue", "Logistics", "Confirm venue & address", daysLeft < 14 ? "high" : "medium",
+                "Make sure you have the exact location locked in so you can share it with guests.");
+        if (daysLeft <= 45)
+            add("order-food", "Logistics", "Finalize catering / food order", daysLeft < 10 ? "critical" : "high",
+                "Most caterers need at least 5–7 days notice. Place or confirm your food order.");
+        if (daysLeft <= 30)
+            add("send-invites", "Logistics", "Send or resend invitations", daysLeft < 7 ? "overdue" : "medium",
+                "If you haven't sent invites yet with only 30 days left, do it today.");
+        if (daysLeft <= 14)
+            add("confirm-vendors", "Logistics", "Confirm all vendors", daysLeft < 5 ? "critical" : "high",
+                "Call/text every vendor and confirm the time, location, and payment.");
+        if (daysLeft <= 7)
+            add("day-of-plan", "Logistics", "Write your day-of timeline", daysLeft < 2 ? "critical" : "high",
+                "Write out a hour-by-hour schedule for the event day. Share with anyone helping you.");
+        if (daysLeft <= 3)
+            add("supplies-ready", "Logistics", "Pack & prep supplies", "critical",
+                "Have everything packed, charged, and ready the day before. Don't leave anything for the morning.");
+    }
+
+    // ── Calendar ───────────────────────────────────────────────────────────────
+    if (!hasCalendar)
+        add("add-cal", "Planning", "Add key dates to Calendar", "medium",
+            "Log vendor deadlines, RSVP cutoffs, and setup day in the Calendar section.");
+    else
+        add("add-cal", "Planning", `${state.calendarEvents.length} calendar event${state.calendarEvents.length !== 1 ? "s" : ""} logged`, "done",
+            "Good. Keep your calendar up to date as plans evolve.");
+
+    // ── Notes ─────────────────────────────────────────────────────────────────
+    if (!hasNotes)
+        add("add-notes", "Planning", "Capture ideas in Notes", "low",
+            "Jot down vendor contacts, decoration ideas, or seating plans in the Notes section.");
+    else
+        add("add-notes", "Planning", `${state.notes.length} note${state.notes.length !== 1 ? "s" : ""} saved`, "done",
+            "Keep adding — notes are searchable later.");
+
+    return tasks;
+}
+
+function computeReadinessScore(tasks) {
+    const weights = { done: 10, low: 3, medium: 6, high: 8, critical: 10, overdue: 10 };
+    let earned = 0, total = 0;
+    tasks.forEach((t) => {
+        const w = weights[t.urgency] || 5;
+        total += w;
+        if (t.urgency === "done" || state.readinessChecks[t.id]) earned += w;
+    });
+    return total === 0 ? 100 : Math.round((earned / total) * 100);
+}
+
+function renderReadiness() {
+    const tasks = buildSmartChecklist();
+    const score = computeReadinessScore(tasks);
+
+    // update nav badge
+    const badge = document.getElementById("nav-readiness-badge");
+    if (badge) { badge.textContent = score + "%"; badge.dataset.score = score; }
+
+    // score ring
+    const circumference = 326.7;
+    const offset = circumference - (score / 100) * circumference;
+    const ringFill = document.getElementById("readiness-ring-fill");
+    if (ringFill) {
+        ringFill.style.transition = "stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1), stroke 0.5s";
+        ringFill.style.strokeDashoffset = offset;
+        const hue = Math.round((score / 100) * 120);
+        ringFill.style.stroke = `hsl(${hue},72%,52%)`;
+    }
+
+    // score number count-up
+    const numEl = document.getElementById("readiness-score-num");
+    if (numEl) countUp(numEl, score, "", "", 900);
+
+    // grade
+    const gradeEl = document.getElementById("readiness-grade");
+    const subEl = document.getElementById("readiness-grade-sub");
+    const { grade, sub } = getReadinessGrade(score);
+    if (gradeEl) gradeEl.textContent = grade;
+    if (subEl) subEl.textContent = sub;
+
+    // pillars
+    const pillarsEl = document.getElementById("readiness-pillars");
+    const groups = [...new Set(tasks.map((t) => t.group))];
+    const pillars = groups.map((g) => {
+        const groupTasks = tasks.filter((t) => t.group === g);
+        const done = groupTasks.filter((t) => t.urgency === "done" || state.readinessChecks[t.id]).length;
+        return { g, done, total: groupTasks.length };
+    });
+    if (pillarsEl) pillarsEl.innerHTML = pillars.map(({ g, done, total }) => `
+        <div class="readiness-pillar">
+            <div class="readiness-pillar-bar-wrap">
+                <div class="readiness-pillar-bar" style="--pct:${Math.round((done/total)*100)}%"></div>
+            </div>
+            <span>${g}</span>
+            <span class="readiness-pillar-count">${done}/${total}</span>
+        </div>
+    `).join("");
+
+    // checklist
+    const doneCount = tasks.filter((t) => t.urgency === "done" || state.readinessChecks[t.id]).length;
+    const doneEl = document.getElementById("readiness-done-count");
+    if (doneEl) doneEl.textContent = `${doneCount} / ${tasks.length} done`;
+
+    const listEl = document.getElementById("readiness-checklist");
+    if (!listEl) return;
+
+    const grouped = {};
+    tasks.forEach((t) => { (grouped[t.group] = grouped[t.group] || []).push(t); });
+
+    listEl.innerHTML = Object.entries(grouped).map(([group, items]) => `
+        <div class="readiness-group">
+            <div class="readiness-group-label">${group}</div>
+            ${items.map((t) => {
+                const isDone = t.urgency === "done" || state.readinessChecks[t.id];
+                return `
+                <div class="readiness-item readiness-item--${t.urgency}${isDone ? " is-done" : ""}" data-id="${t.id}">
+                    <label class="readiness-checkbox-wrap">
+                        <input type="checkbox" class="readiness-check" data-id="${t.id}"
+                            ${isDone ? "checked" : ""}
+                            ${t.urgency === "done" ? "disabled" : ""}>
+                        <span class="readiness-checkmark"></span>
+                    </label>
+                    <div class="readiness-item-body">
+                        <div class="readiness-item-text">${t.text}</div>
+                        <div class="readiness-item-tip">${t.tip}</div>
+                    </div>
+                    <span class="readiness-badge readiness-badge--${t.urgency}">${t.urgency === "done" ? "✓ done" : t.urgency}</span>
+                </div>`;
+            }).join("")}
+        </div>
+    `).join("");
+
+    // bind checkboxes
+    listEl.querySelectorAll(".readiness-check:not([disabled])").forEach((cb) => {
+        cb.addEventListener("change", () => {
+            state.readinessChecks[cb.dataset.id] = cb.checked;
+            saveStateToStorage();
+            renderReadiness();
+        });
+    });
+}
+
+function getReadinessGrade(score) {
+    if (score >= 90) return { grade: "Event Ready 🎉", sub: "You're in great shape. Final checks and enjoy the day!" };
+    if (score >= 75) return { grade: "Almost There", sub: "A few loose ends — tackle the high-priority items first." };
+    if (score >= 55) return { grade: "In Progress", sub: "Good momentum, but critical tasks need attention soon." };
+    if (score >= 35) return { grade: "Getting Started", sub: "You have the basics — now build out your plan." };
+    return { grade: "Just Beginning", sub: "Start with Foundation tasks — they unlock everything else." };
 }
