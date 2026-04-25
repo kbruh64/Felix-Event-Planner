@@ -270,23 +270,62 @@
             <div class="page-header">
                 <div>
                     <div class="page-title" id="template-title">Template Details</div>
-                    <div class="page-subtitle" id="template-subtitle">Choose a planner template to build a checklist.</div>
+                    <div class="page-subtitle" id="template-subtitle">Your interactive planning workspace</div>
                 </div>
-                <button type="button" class="btn btn-secondary" id="back-home-button">← Back</button>
+                <div style="display:flex;gap:8px;">
+                    <button type="button" class="btn btn-secondary" id="back-home-button">← Back</button>
+                </div>
             </div>
+
+            <!-- Hero banner -->
             <div class="template-hero" id="template-hero">
                 <div class="template-emoji" id="template-emoji">🎉</div>
-                <div>
+                <div style="flex:1;">
                     <h2 id="template-hero-title">Party Planner Template</h2>
                     <p id="template-description">A ready-made planning flow for your next event.</p>
                 </div>
+                <div class="template-hero-stats" id="template-hero-stats"></div>
             </div>
-            <div class="detail-grid">
+
+            <!-- Spec + date row -->
+            <div class="detail-grid" style="margin-bottom:20px;">
                 <div class="card"><div class="card-header"><h3>Event Specification</h3></div><div class="spec-grid" id="template-spec-grid"></div></div>
-                <div class="card"><div class="card-header"><h3>Planning Timeline</h3></div><div id="template-timeline" class="template-tips"></div></div>
-                <div class="card"><div class="card-header"><h3>Shopping Checklist</h3></div><ul id="template-detail-list" class="template-checklist"></ul></div>
-                <div class="card"><div class="card-header"><h3>Nearby Stores</h3></div><div id="template-stores" class="store-list"></div></div>
-                <div class="card"><div class="card-header"><h3>Planning Tips</h3></div><div id="template-tips" class="template-tips"></div></div>
+                <div class="card">
+                    <div class="card-header"><h3>Set Your Event Date</h3></div>
+                    <div style="display:grid;gap:10px;margin-top:8px;">
+                        <input type="date" id="template-event-date">
+                        <button type="button" class="btn btn-primary" id="template-save-date-btn">Save Date & Start Countdown</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks checklist -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header" style="justify-content:space-between;align-items:center;">
+                    <h3>Task Checklist</h3>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span class="tpl-task-progress" id="tpl-task-progress">0 / 0 done</span>
+                        <button type="button" class="btn btn-ghost btn-sm" id="tpl-reset-tasks-btn">Reset</button>
+                    </div>
+                </div>
+                <div class="tpl-progress-bar-wrap"><div class="tpl-progress-bar" id="tpl-progress-bar"></div></div>
+                <div id="tpl-task-list" class="tpl-task-list"></div>
+                <div style="margin-top:14px;display:flex;gap:8px;">
+                    <input type="text" id="tpl-add-task-input" placeholder="Add a custom task…" style="flex:1;">
+                    <button type="button" class="btn btn-secondary" id="tpl-add-task-btn">Add Task</button>
+                </div>
+            </div>
+
+            <!-- Timeline + Tips row -->
+            <div class="detail-grid" style="margin-bottom:20px;">
+                <div class="card"><div class="card-header"><h3>Planning Timeline</h3></div><div id="template-timeline" class="tpl-timeline"></div></div>
+                <div class="card"><div class="card-header"><h3>Pro Tips</h3></div><div id="template-tips" class="tpl-tips"></div></div>
+            </div>
+
+            <!-- Stores -->
+            <div class="card">
+                <div class="card-header"><h3>Where to Shop</h3></div>
+                <div id="template-stores" class="store-list" style="margin-top:10px;"></div>
             </div>
         </section>
 

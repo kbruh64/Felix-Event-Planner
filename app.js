@@ -437,11 +437,10 @@ function renderTutorialStep() {
     const idx = state.tutorialStep;
     if (idx >= total) { endTutorial(); return; }
 
-    // re-trigger pop animation
     const box = document.getElementById("tutorial-box");
-    box.style.animation = "none";
-    box.offsetHeight; // reflow
-    box.style.animation = "";
+    box.classList.remove("tutorial-pop");
+    box.offsetWidth; // reflow
+    box.classList.add("tutorial-pop");
 
     const step = tutorialSteps[idx];
 
@@ -528,11 +527,10 @@ function renderCategories() {
 
 function selectCategory(categoryId, btnEl) {
     state.selectedCategory = categoryId;
+    saveStateToStorage();
     highlightSelectedCategory(categoryId, btnEl);
-    renderTemplatePreview(categoryId);
     renderTemplateDetail(categoryId);
     showSection("template-detail");
-    showToast("Opened planner template");
 }
 
 function highlightSelectedCategory(categoryId, btnEl) {
@@ -542,16 +540,22 @@ function highlightSelectedCategory(categoryId, btnEl) {
 }
 
 function renderTemplatePreview(categoryId) {
-    const preview = document.getElementById("template-section");
-    const checklistItems = document.getElementById("checklist-items");
+    // legacy no-op — renderTemplateDetail handles everything now
+}
+
+function getTemplateTaskKey(categoryId) { return `fep_tasks_${categoryId}`; }
+
+function loadTemplateTasks(categoryId) {
     const template = templates[categoryId];
-    checklistItems.innerHTML = template.tasks.map((task) => `
-        <label class="checklist-row">
-            <input type="checkbox">
-            <span>${task}</span>
-        </label>
-    `).join("");
-    preview.classList.remove("hidden");
+    if (!template) return [];
+    const saved = JSON.parse(localStorage.getItem(getTemplateTaskKey(categoryId)) || "null");
+    if (saved) return saved;
+    // First load: build from template tasks
+    return template.tasks.map((text, i) => ({ id: i, text, done: false }));
+}
+
+function saveTemplateTasks(categoryId, tasks) {
+    localStorage.setItem(getTemplateTaskKey(categoryId), JSON.stringify(tasks));
 }
 
 function renderTemplateDetail(categoryId) {
@@ -559,22 +563,133 @@ function renderTemplateDetail(categoryId) {
     const template = templates[categoryId];
     if (!category || !template) return;
 
+    // Header
     document.getElementById("template-title").textContent = `${category.label} Planner`;
-    document.getElementById("template-subtitle").textContent = "A dedicated planning section for this template.";
     document.getElementById("template-emoji").textContent = category.icon;
-    document.getElementById("template-hero-title").textContent = `${category.label} Template`;
+    document.getElementById("template-hero-title").textContent = `${category.icon}  ${category.label} Planner`;
     document.getElementById("template-description").textContent = template.description;
-    document.getElementById("template-detail-list").innerHTML = template.tasks.map((t) => `<li>${t}</li>`).join("");
-    document.getElementById("template-tips").innerHTML = template.tips.map((t) => `<p>${t}</p>`).join("");
-    document.getElementById("template-timeline").innerHTML = template.timeline.map((t) => `<p>${t}</p>`).join("");
-    document.getElementById("template-stores").innerHTML = template.stores.map((s) => `<div class="store-card">${s}</div>`).join("");
+    document.getElementById("template-hero").style.setProperty("border-color", category.color);
+
+    // Spec
     document.getElementById("template-spec-grid").innerHTML = `
         <div class="spec-card"><span>Vibe</span><strong>${template.spec.vibe}</strong></div>
         <div class="spec-card"><span>Guests</span><strong>${template.spec.guests}</strong></div>
         <div class="spec-card"><span>Budget</span><strong>${template.spec.budget}</strong></div>
         <div class="spec-card"><span>Best Venue</span><strong>${template.spec.location}</strong></div>
     `;
-    document.getElementById("template-hero").style.borderColor = category.color;
+
+    // Event date
+    const dateInput = document.getElementById("template-event-date");
+    if (state.eventDate) dateInput.value = state.eventDate.toISOString().split("T")[0];
+
+    document.getElementById("template-save-date-btn").onclick = () => {
+        const val = dateInput.value;
+        if (!val) { showToast("Pick a date first."); return; }
+        state.eventDate = new Date(val);
+        saveStateToStorage();
+        updateCountdown();
+        showToast("Event date saved! Countdown started.");
+        renderTemplateTasksUI(categoryId);
+    };
+
+    // Timeline
+    document.getElementById("template-timeline").innerHTML = template.timeline.map((t, i) => `
+        <div class="tpl-timeline-item">
+            <div class="tpl-timeline-dot" style="background:${category.color}"></div>
+            <span>${t}</span>
+        </div>
+    `).join("");
+
+    // Tips
+    document.getElementById("template-tips").innerHTML = template.tips.map((t) => `
+        <div class="tpl-tip-item">
+            <span class="tpl-tip-icon">💡</span>
+            <span>${t}</span>
+        </div>
+    `).join("");
+
+    // Stores
+    document.getElementById("template-stores").innerHTML = template.stores.map((s) => `
+        <div class="store-card">${s}</div>
+    `).join("");
+
+    // Tasks
+    renderTemplateTasksUI(categoryId);
+
+    // Add task button
+    document.getElementById("tpl-add-task-btn").onclick = () => {
+        const input = document.getElementById("tpl-add-task-input");
+        const text = input.value.trim();
+        if (!text) return;
+        const tasks = loadTemplateTasks(categoryId);
+        tasks.push({ id: Date.now(), text, done: false });
+        saveTemplateTasks(categoryId, tasks);
+        input.value = "";
+        renderTemplateTasksUI(categoryId);
+        showToast("Task added.");
+    };
+    document.getElementById("tpl-add-task-input").onkeydown = (e) => {
+        if (e.key === "Enter") document.getElementById("tpl-add-task-btn").click();
+    };
+
+    // Reset button
+    document.getElementById("tpl-reset-tasks-btn").onclick = () => {
+        if (!confirm("Reset all tasks to unchecked?")) return;
+        const tasks = loadTemplateTasks(categoryId).map((t) => ({ ...t, done: false }));
+        saveTemplateTasks(categoryId, tasks);
+        renderTemplateTasksUI(categoryId);
+    };
+}
+
+function renderTemplateTasksUI(categoryId) {
+    const tasks = loadTemplateTasks(categoryId);
+    const done = tasks.filter((t) => t.done).length;
+    const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+
+    document.getElementById("tpl-task-progress").textContent = `${done} / ${tasks.length} done`;
+    document.getElementById("tpl-progress-bar").style.width = pct + "%";
+
+    // hero stats
+    const heroStats = document.getElementById("template-hero-stats");
+    if (heroStats) heroStats.innerHTML = `
+        <div class="tpl-hero-stat">
+            <div class="tpl-hero-stat-num">${pct}%</div>
+            <div class="tpl-hero-stat-label">complete</div>
+        </div>
+        <div class="tpl-hero-stat">
+            <div class="tpl-hero-stat-num">${tasks.length - done}</div>
+            <div class="tpl-hero-stat-label">tasks left</div>
+        </div>
+    `;
+
+    const list = document.getElementById("tpl-task-list");
+    list.innerHTML = tasks.map((task, i) => `
+        <div class="tpl-task-item${task.done ? " tpl-task-done" : ""}" data-i="${i}">
+            <label class="tpl-task-check-wrap">
+                <input type="checkbox" class="tpl-task-check" data-i="${i}" ${task.done ? "checked" : ""}>
+                <span class="tpl-checkmark"></span>
+            </label>
+            <span class="tpl-task-text">${task.text}</span>
+            <button type="button" class="tpl-task-remove" data-i="${i}" title="Remove">✕</button>
+        </div>
+    `).join("");
+
+    list.querySelectorAll(".tpl-task-check").forEach((cb) => {
+        cb.addEventListener("change", () => {
+            const tasks = loadTemplateTasks(categoryId);
+            tasks[cb.dataset.i].done = cb.checked;
+            saveTemplateTasks(categoryId, tasks);
+            renderTemplateTasksUI(categoryId);
+        });
+    });
+    list.querySelectorAll(".tpl-task-remove").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const tasks = loadTemplateTasks(categoryId);
+            tasks.splice(Number(btn.dataset.i), 1);
+            saveTemplateTasks(categoryId, tasks);
+            renderTemplateTasksUI(categoryId);
+        });
+    });
 }
 
 // ── CUSTOM TEMPLATES ──────────────────────────────────────────────────────────

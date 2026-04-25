@@ -1188,6 +1188,103 @@ textarea {
   font-size: 0.85rem;
 }
 
+/* ── TEMPLATE WORKSPACE ───────────────────────────────────────────────────── */
+.template-hero-stats {
+  display: flex; gap: 20px; flex-shrink: 0; margin-left: auto;
+}
+.tpl-hero-stat { text-align: center; }
+.tpl-hero-stat-num { font-size: 1.6rem; font-weight: 800; color: var(--text1); line-height: 1; }
+.tpl-hero-stat-label { font-size: 0.72rem; color: var(--text3); margin-top: 2px; }
+
+/* progress bar */
+.tpl-progress-bar-wrap {
+  height: 6px; background: var(--border); border-radius: 4px; overflow: hidden;
+  margin: 12px 0 16px;
+}
+.tpl-progress-bar {
+  height: 100%; background: linear-gradient(90deg, var(--p), var(--violet));
+  border-radius: 4px; width: 0%;
+  transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+
+.tpl-task-progress {
+  font-size: 0.78rem; font-weight: 600; color: var(--p);
+  background: rgba(99,102,241,0.1); padding: 3px 10px; border-radius: 10px;
+}
+
+/* task list */
+.tpl-task-list { display: grid; gap: 6px; }
+
+.tpl-task-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  transition: background 0.15s, opacity 0.2s;
+  animation: listItemIn 0.25s both;
+}
+.tpl-task-item:hover { background: var(--hover); }
+.tpl-task-item.tpl-task-done { opacity: 0.5; }
+
+/* custom checkbox */
+.tpl-task-check-wrap { display: flex; align-items: center; cursor: pointer; flex-shrink: 0; }
+.tpl-task-check-wrap input { display: none; }
+.tpl-checkmark {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border); border-radius: 5px;
+  background: var(--surface);
+  display: grid; place-items: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.tpl-task-check-wrap input:checked + .tpl-checkmark {
+  background: var(--p); border-color: var(--p);
+}
+.tpl-task-check-wrap input:checked + .tpl-checkmark::after {
+  content: "";
+  width: 5px; height: 9px;
+  border: 2px solid #fff; border-top: none; border-left: none;
+  transform: rotate(45deg) translate(-1px,-1px);
+}
+
+.tpl-task-text {
+  flex: 1; font-size: 0.875rem; color: var(--text1);
+}
+.tpl-task-done .tpl-task-text { text-decoration: line-through; color: var(--text3); }
+
+.tpl-task-remove {
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); font-size: 0.75rem;
+  padding: 2px 5px; border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  opacity: 0;
+}
+.tpl-task-item:hover .tpl-task-remove { opacity: 1; }
+.tpl-task-remove:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+
+/* timeline */
+.tpl-timeline { display: grid; gap: 10px; margin-top: 8px; }
+.tpl-timeline-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 0.85rem; color: var(--text2); line-height: 1.5;
+}
+.tpl-timeline-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 5px;
+}
+
+/* tips */
+.tpl-tips { display: grid; gap: 8px; margin-top: 8px; }
+.tpl-tip-item {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 0.84rem; color: var(--text2); line-height: 1.5;
+}
+.tpl-tip-icon { flex-shrink: 0; }
+
 /* ── EMPTY STATE ──────────────────────────────────────────────────────────── */
 .empty-state {
   padding: 24px;
@@ -1530,14 +1627,15 @@ textarea {
   width: 360px;
   padding: 18px 20px;
   border-radius: var(--r-lg);
-  background: var(--bg);
+  background: var(--surface);
   box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px var(--border);
   display: grid; gap: 12px;
   pointer-events: all;
-  animation: tutorialPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
   z-index: 4000;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  opacity: 1;
+}
+.tutorial-box.tutorial-pop {
+  animation: tutorialPop 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
 }
 
 @keyframes tutorialPop {
