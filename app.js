@@ -894,38 +894,92 @@ function renderSavings() {
 // ── ANALYTICS ─────────────────────────────────────────────────────────────────
 
 function updateAnalytics() {
-    const confirmed = state.guests.filter((g) => g.rsvp === "Confirmed").length;
-    const totalGuests = state.guests.length || 1;
-    const rsvpPct = Math.round((confirmed / totalGuests) * 100);
-    document.getElementById("rsvp-chart").innerHTML = `
-        <div class="bar" style="width:${Math.max(rsvpPct, 8)}%">Confirmed: ${confirmed}</div>
-    `;
+    const el = document.getElementById("analytics-body");
+    if (!el) return;
 
-    const totalCost = state.expenses.reduce((sum, e) => sum + e.cost, 0);
-    const budgetPct = state.budgetLimit === 0 ? 0 : Math.min(Math.round((totalCost / state.budgetLimit) * 100), 100);
-    document.getElementById("budget-chart").innerHTML = `
-        <div class="bar" style="width:${Math.max(budgetPct, 8)}%;background:${totalCost > state.budgetLimit ? "var(--red)" : "var(--green)"}">
-            Spent: $${totalCost.toFixed(2)}
+    // RSVP
+    const total = state.guests.length;
+    const confirmed = state.guests.filter((g) => g.rsvp === "Confirmed").length;
+    const declined = state.guests.filter((g) => g.rsvp === "Declined").length;
+    const pending = state.guests.filter((g) => g.rsvp === "Pending").length;
+    const rsvpPct = total ? Math.round((confirmed / total) * 100) : 0;
+
+    // Budget
+    const totalSpend = state.expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+    const budgetSet = state.budgetLimit > 0;
+    const budgetPct = budgetSet ? Math.min(Math.round((totalSpend / state.budgetLimit) * 100), 100) : 0;
+    const overBudget = budgetSet && totalSpend > state.budgetLimit;
+    const remaining = state.budgetLimit - totalSpend;
+
+    // Allergies
+    const allergies = state.guests.filter((g) => g.allergy && g.allergy !== "No allergies");
+
+    // Readiness score (reuse engine)
+    const tasks = buildSmartChecklist();
+    const readinessScore = computeReadinessScore(tasks);
+    const doneTasks = tasks.filter((t) => t.urgency === "done" || state.readinessChecks[t.id]).length;
+
+    el.innerHTML = `
+        <div class="analytics-grid">
+
+            <div class="analytics-card">
+                <div class="analytics-card-title">RSVP Overview</div>
+                <div class="analytics-big-num">${confirmed}<span class="analytics-big-denom"> / ${total}</span></div>
+                <div class="analytics-label">guests confirmed</div>
+                <div class="analytics-bar-wrap">
+                    <div class="analytics-bar" style="width:${rsvpPct}%;background:var(--emerald)"></div>
+                </div>
+                <div class="analytics-row-stats">
+                    <span class="analytics-chip analytics-chip--green">✓ ${confirmed} confirmed</span>
+                    <span class="analytics-chip analytics-chip--yellow">⏳ ${pending} pending</span>
+                    <span class="analytics-chip analytics-chip--red">✗ ${declined} declined</span>
+                </div>
+            </div>
+
+            <div class="analytics-card">
+                <div class="analytics-card-title">Budget Overview</div>
+                <div class="analytics-big-num${overBudget ? " analytics-big-num--red" : ""}">$${totalSpend.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+                <div class="analytics-label">of ${budgetSet ? "$" + state.budgetLimit.toLocaleString() : "no limit set"} spent</div>
+                <div class="analytics-bar-wrap">
+                    <div class="analytics-bar" style="width:${budgetPct}%;background:${overBudget ? "var(--red,#ef4444)" : "var(--emerald)"}"></div>
+                </div>
+                <div class="analytics-row-stats">
+                    ${budgetSet
+                        ? `<span class="analytics-chip ${overBudget ? "analytics-chip--red" : "analytics-chip--green"}">${overBudget ? "⚠ Over by $" + Math.abs(remaining).toFixed(2) : "✓ $" + remaining.toFixed(2) + " left"}</span>`
+                        : `<span class="analytics-chip analytics-chip--yellow">Set a budget limit in Budget</span>`}
+                    <span class="analytics-chip analytics-chip--blue">${state.expenses.length} expense${state.expenses.length !== 1 ? "s" : ""}</span>
+                </div>
+            </div>
+
+            <div class="analytics-card">
+                <div class="analytics-card-title">Allergy Summary</div>
+                <div class="analytics-big-num">${allergies.length}</div>
+                <div class="analytics-label">dietary restriction${allergies.length !== 1 ? "s" : ""} noted</div>
+                ${allergies.length
+                    ? `<ul class="analytics-allergy-list">${allergies.map((g) => `<li><strong>${g.name}:</strong> ${g.allergy}</li>`).join("")}</ul>`
+                    : `<div class="analytics-empty">No allergies reported.</div>`}
+            </div>
+
+            <div class="analytics-card">
+                <div class="analytics-card-title">Event Readiness</div>
+                <div class="analytics-big-num${readinessScore < 40 ? " analytics-big-num--red" : readinessScore >= 75 ? " analytics-big-num--green" : ""}">${readinessScore}<span class="analytics-big-denom">%</span></div>
+                <div class="analytics-label">${doneTasks} of ${tasks.length} checklist items complete</div>
+                <div class="analytics-bar-wrap">
+                    <div class="analytics-bar" style="width:${readinessScore}%;background:hsl(${Math.round(readinessScore*1.2)},72%,52%)"></div>
+                </div>
+                <div class="analytics-row-stats">
+                    <span class="analytics-chip analytics-chip--violet">View Readiness →</span>
+                </div>
+            </div>
+
         </div>
     `;
 
-    const allergies = state.guests.filter((g) => g.allergy);
-    document.getElementById("allergy-summary").innerHTML = allergies.length
-        ? `<ul>${allergies.map((g) => `<li>${g.name}: ${g.allergy}</li>`).join("")}</ul>`
-        : "No allergies reported.";
-
-    const checklistEl = document.getElementById("checklist-progress");
-    if (checklistEl) {
-        const checkboxes = document.querySelectorAll("#checklist-items input[type=checkbox]");
-        const checked = [...checkboxes].filter((c) => c.checked).length;
-        const total = checkboxes.length || 1;
-        const pct = Math.round((checked / total) * 100);
-        checklistEl.innerHTML = `
-            <div class="bar" style="width:${Math.max(pct, 8)}%;background:var(--primary)">
-                ${checked} / ${checkboxes.length} tasks done
-            </div>
-        `;
-    }
+    // wire up readiness link
+    el.querySelector(".analytics-chip--violet").addEventListener("click", () => {
+        const btn = document.querySelector('.nav-item[data-section="readiness"]');
+        showSection("readiness", btn);
+    });
 }
 
 // ── CALENDAR ──────────────────────────────────────────────────────────────────
