@@ -430,49 +430,11 @@ function renderTutorialStep() {
         target.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    // position tooltip near target
-    positionTutorialBox(target);
+    positionTutorialBox();
 }
 
-function positionTutorialBox(target) {
-    const box = document.getElementById("tutorial-box");
-    box.style.position = "fixed";
-
-    if (!target) {
-        box.style.top = "50%";
-        box.style.left = "50%";
-        box.style.transform = "translate(-50%, -50%)";
-        return;
-    }
-
-    // wait for scroll + layout
-    setTimeout(() => {
-        const rect = target.getBoundingClientRect();
-        const boxH = box.offsetHeight || 160;
-        const boxW = box.offsetWidth || 340;
-        const margin = 16;
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-
-        let top, left;
-
-        // prefer below target, else above
-        if (rect.bottom + boxH + margin < vh) {
-            top = rect.bottom + margin;
-        } else if (rect.top - boxH - margin > 0) {
-            top = rect.top - boxH - margin;
-        } else {
-            top = Math.max(margin, Math.min(vh - boxH - margin, rect.top));
-        }
-
-        // center horizontally on target, clamped to viewport
-        left = rect.left + rect.width / 2 - boxW / 2;
-        left = Math.max(margin, Math.min(vw - boxW - margin, left));
-
-        box.style.top = `${top}px`;
-        box.style.left = `${left}px`;
-        box.style.transform = "none";
-    }, 120);
+function positionTutorialBox() {
+    // Fixed bottom-right — always fully visible, never overlaps content
 }
 
 function nextTutorialStep() {
